@@ -1,29 +1,59 @@
-﻿const STORAGE_KEY = "rpg_idle_ashen_keep_v5";
+﻿const STORAGE_KEY = "rpg_idle_ashen_keep_v6";
+const LEGACY_STORAGE_KEYS = ["rpg_idle_ashen_keep_v5"];
 const SAVE_INTERVAL_MS = 5000;
 const TOTAL_WORLDS = 100;
 const STAGES_PER_WORLD = 100;
 const MAX_OFFLINE_SECONDS = 4 * 60 * 60;
 const LOG_LIMIT = 40;
-const INVENTORY_LIMIT = 36;
+const INVENTORY_LIMIT = 90;
+const RECENT_DRAW_LIMIT = 8;
 const DRAW_COST_SINGLE = 40;
 const DRAW_COST_MULTI = 360;
 const FURY_DURATION = 10;
 const FURY_COOLDOWN = 40;
+const SYNTHESIS_REQUIREMENT = 3;
 
 const EQUIPMENT_SLOTS = [
-  { id: "weapon", label: "무기" },
+  { id: "helmet", label: "투구" },
   { id: "armor", label: "방어구" },
+  { id: "weapon", label: "무기" },
   { id: "ring", label: "반지" },
-  { id: "sigil", label: "인장" },
+  { id: "necklace", label: "목걸이" },
+  { id: "bracelet", label: "팔찌" },
+  { id: "greaves", label: "각반" },
+  { id: "gloves", label: "장갑" },
+  { id: "shoes", label: "신발" },
 ];
 
 const RARITIES = [
-  { id: "common", label: "Common", weight: 58, multiplier: 1, className: "rarity-common" },
-  { id: "rare", label: "Rare", weight: 28, multiplier: 1.45, className: "rarity-rare" },
-  { id: "epic", label: "Epic", weight: 10, multiplier: 2.05, className: "rarity-epic" },
-  { id: "legendary", label: "Legendary", weight: 3.4, multiplier: 2.95, className: "rarity-legendary" },
-  { id: "mythic", label: "Mythic", weight: 0.6, multiplier: 4.1, className: "rarity-mythic" },
+  { id: "common", label: "일반", weight: 47, multiplier: 1, className: "rarity-common" },
+  { id: "advanced", label: "고급", weight: 26, multiplier: 1.24, className: "rarity-advanced" },
+  { id: "rare", label: "희귀", weight: 15, multiplier: 1.62, className: "rarity-rare" },
+  { id: "heroic", label: "영웅", weight: 7.8, multiplier: 2.15, className: "rarity-heroic" },
+  { id: "legendary", label: "전설", weight: 3.1, multiplier: 2.95, className: "rarity-legendary" },
+  { id: "mythic", label: "신화", weight: 0.9, multiplier: 4.1, className: "rarity-mythic" },
+  { id: "unique", label: "유일", weight: 0.2, multiplier: 5.65, className: "rarity-unique" },
 ];
+
+const CREATION_RARITY = {
+  id: "creation",
+  label: "창조",
+  weight: 0,
+  multiplier: 7.4,
+  className: "rarity-creation",
+};
+
+const LEGACY_SLOT_MAP = {
+  sigil: "necklace",
+};
+
+const LEGACY_RARITY_MAP = {
+  common: "common",
+  rare: "rare",
+  epic: "heroic",
+  legendary: "legendary",
+  mythic: "mythic",
+};
 
 const WORLD_THEMES = [
   {
@@ -130,7 +160,7 @@ const DUNGEONS = [
     enemyScale: 1.18,
     diamondReward: 45,
     essenceReward: 3,
-    guaranteedRarity: "rare",
+    guaranteedRarity: "advanced",
     description: "초반 파밍용 던전입니다. 장비 뽑기를 위한 다이아 수급처입니다.",
     modifier: "던전 피해 옵션이 높을수록 빠르게 정리됩니다.",
     enemies: ["묘지 수호골렘", "탄화 망령", "침식 묘지기"],
@@ -158,7 +188,7 @@ const DUNGEONS = [
     enemyScale: 1.42,
     diamondReward: 90,
     essenceReward: 5,
-    guaranteedRarity: "epic",
+    guaranteedRarity: "heroic",
     description: "공격 속도와 치명타가 중요해지는 기계 던전입니다.",
     modifier: "장비 보너스가 좋을수록 체감 난도가 크게 낮아집니다.",
     enemies: ["유리 자동병기", "균열 포격수", "수정 수호기"],
@@ -172,7 +202,7 @@ const DUNGEONS = [
     enemyScale: 1.55,
     diamondReward: 120,
     essenceReward: 6,
-    guaranteedRarity: "epic",
+    guaranteedRarity: "heroic",
     description: "지속 생존력과 체력 재생의 가치가 커지는 중반 던전입니다.",
     modifier: "일부 층에서 번개 폭주로 적 피해가 강화됩니다.",
     enemies: ["천뢰 정령", "폭풍 파수꾼", "심연 조류"],
@@ -186,7 +216,7 @@ const DUNGEONS = [
     enemyScale: 1.75,
     diamondReward: 155,
     essenceReward: 7,
-    guaranteedRarity: "epic",
+    guaranteedRarity: "legendary",
     description: "장비 점수와 공격력의 차이가 확실히 드러나는 던전입니다.",
     modifier: "보스가 단단하지만 전리품이 좋습니다.",
     enemies: ["주조소 감시병", "용광 기수", "강철 파열자"],
@@ -214,7 +244,7 @@ const DUNGEONS = [
     enemyScale: 2.18,
     diamondReward: 240,
     essenceReward: 11,
-    guaranteedRarity: "legendary",
+    guaranteedRarity: "mythic",
     description: "보스 피해와 던전 피해 보너스가 크게 작용합니다.",
     modifier: "공허 왜곡으로 적의 체력이 높은 편입니다.",
     enemies: ["공허 관측자", "왜곡 학자", "심연 포식체"],
@@ -228,7 +258,7 @@ const DUNGEONS = [
     enemyScale: 2.45,
     diamondReward: 320,
     essenceReward: 14,
-    guaranteedRarity: "mythic",
+    guaranteedRarity: "unique",
     description: "최종 빌드용 장비를 노릴 수 있는 엔드 던전입니다.",
     modifier: "최종층에서 모든 적 능력치가 급격히 상승합니다.",
     enemies: ["심판장 집행관", "왕관 척후병", "왕실 성전사"],
@@ -368,11 +398,30 @@ const BLESSING_DEFS = {
 };
 
 const ITEM_PREFIXES = ["잿불", "월광", "유리", "가시", "폭풍", "철혈", "서리", "공허", "태양", "왕관", "심연", "성흔"];
+const CREATION_PREFIXES = ["창조", "우주", "시원", "태초", "절대", "성좌"];
+
 const ITEM_NAMES = {
+  helmet: ["투구", "면갑", "투헬름", "정수관", "철관"],
+  armor: ["갑주", "흉갑", "전투복", "판금", "외투"],
   weapon: ["대검", "장창", "월도", "사슬검", "마도총"],
-  armor: ["갑주", "외투", "흉갑", "전투복", "수호판금"],
-  ring: ["반지", "결속환", "인장", "오브", "결정환"],
-  sigil: ["문장", "부적", "핵", "성배", "봉인석"],
+  ring: ["반지", "결속환", "오브", "결정환", "지배환"],
+  necklace: ["목걸이", "성배", "인장", "봉인석", "아뮬렛"],
+  bracelet: ["팔찌", "쇄도환", "수호륜", "완갑", "매듭고리"],
+  greaves: ["각반", "경갑", "무릎갑", "추적구", "철각"],
+  gloves: ["장갑", "건틀릿", "전투장", "추적수", "철수갑"],
+  shoes: ["신발", "전투화", "행군화", "질주화", "은신화"],
+};
+
+const CREATION_NAMES = {
+  helmet: ["천개 투구", "별무리 관"],
+  armor: ["창세 갑주", "절대 흉갑"],
+  weapon: ["태초 검", "무한 장창"],
+  ring: ["세계환", "시원 반지"],
+  necklace: ["개벽 목걸이", "별핵 아뮬렛"],
+  bracelet: ["우주 팔찌", "창조 완갑"],
+  greaves: ["천공 각반", "개벽 철각"],
+  gloves: ["창세 장갑", "운명 건틀릿"],
+  shoes: ["성좌 신발", "절대 전투화"],
 };
 
 function byId(id) {
@@ -438,6 +487,7 @@ const refs = {
   drawPityValue: byId("drawPityValue"),
   recentDraws: byId("recentDraws"),
   inventoryList: byId("inventoryList"),
+  synthesisList: byId("synthesisList"),
   combatLog: byId("combatLog"),
 };
 
@@ -461,7 +511,11 @@ function createEmptyBonuses() {
 }
 
 function createEquippedState() {
-  return { weapon: null, armor: null, ring: null, sigil: null };
+  const equipped = {};
+  EQUIPMENT_SLOTS.forEach((slot) => {
+    equipped[slot.id] = null;
+  });
+  return equipped;
 }
 
 function createDungeonClears() {
@@ -502,6 +556,7 @@ function createInitialState() {
     dungeons: { active: null, clears: createDungeonClears() },
     equipment: { nextId: 1, inventory: [], equipped: createEquippedState() },
     gacha: { pity: 0, totalDraws: 0, recentResults: [] },
+    forge: { totalSynths: 0, totalCreations: 0 },
     settings: { autoAdvance: true, autoAdvanceWorld: true, activeMenu: "upgrades" },
     combat: {
       enemy: null,
@@ -515,77 +570,6 @@ function createInitialState() {
     lastSeen: Date.now(),
   };
 }
-
-function cloneBonuses(bonuses) {
-  return {
-    attack: Number(bonuses.attack || 0),
-    maxHp: Number(bonuses.maxHp || 0),
-    attackSpeed: Number(bonuses.attackSpeed || 0),
-    critChance: Number(bonuses.critChance || 0),
-    critDamage: Number(bonuses.critDamage || 0),
-    regen: Number(bonuses.regen || 0),
-    goldRate: Number(bonuses.goldRate || 0),
-    diamondRate: Number(bonuses.diamondRate || 0),
-    bossDamage: Number(bonuses.bossDamage || 0),
-    dungeonDamage: Number(bonuses.dungeonDamage || 0),
-  };
-}
-
-function hydrateState(saved) {
-  const base = createInitialState();
-  if (!saved || typeof saved !== "object") return base;
-
-  const inventory = Array.isArray(saved.equipment?.inventory)
-    ? saved.equipment.inventory.map((item) => ({ ...item, bonuses: cloneBonuses(item.bonuses || {}) }))
-    : [];
-
-  const equipped = createEquippedState();
-  EQUIPMENT_SLOTS.forEach((slot) => {
-    const item = saved.equipment?.equipped?.[slot.id];
-    equipped[slot.id] = item ? { ...item, bonuses: cloneBonuses(item.bonuses || {}) } : null;
-  });
-
-  return {
-    ...base,
-    resources: { ...base.resources, ...saved.resources },
-    hero: { ...base.hero, ...saved.hero },
-    upgrades: { ...base.upgrades, ...saved.upgrades },
-    blessings: { ...base.blessings, ...saved.blessings },
-    progress: { ...base.progress, ...saved.progress },
-    dungeons: {
-      active: saved.dungeons?.active ? { ...saved.dungeons.active } : null,
-      clears: { ...createDungeonClears(), ...(saved.dungeons?.clears || {}) },
-    },
-    equipment: {
-      nextId: Number(saved.equipment?.nextId || base.equipment.nextId),
-      inventory,
-      equipped,
-    },
-    gacha: { ...base.gacha, ...saved.gacha },
-    settings: { ...base.settings, ...saved.settings },
-    combat: { ...base.combat, ...saved.combat, enemy: null },
-    logs: Array.isArray(saved.logs) ? saved.logs.slice(0, LOG_LIMIT) : [],
-    lastSeen: typeof saved.lastSeen === "number" ? saved.lastSeen : Date.now(),
-  };
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialState();
-    return hydrateState(JSON.parse(raw));
-  } catch (error) {
-    console.warn("Failed to load save state.", error);
-    return createInitialState();
-  }
-}
-
-function saveState() {
-  state.lastSeen = Date.now();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  lastSave = state.lastSeen;
-}
-
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -611,6 +595,161 @@ function formatPercent(value) {
 
 function formatMultiplier(value) {
   return `x${value.toFixed(2)}`;
+}
+
+function getSlotById(id) {
+  return EQUIPMENT_SLOTS.find((slot) => slot.id === id) || EQUIPMENT_SLOTS[0];
+}
+
+function getSlotLabel(id) {
+  return getSlotById(id).label;
+}
+
+function getRarityData(id, isCreation) {
+  if (isCreation || id === CREATION_RARITY.id) return CREATION_RARITY;
+  return RARITIES.find((rarity) => rarity.id === id) || RARITIES[0];
+}
+
+function getRarityRank(id, isCreation) {
+  if (isCreation || id === CREATION_RARITY.id) return RARITIES.length;
+  return Math.max(0, RARITIES.findIndex((rarity) => rarity.id === id));
+}
+
+function getNextRarity(id) {
+  const index = RARITIES.findIndex((rarity) => rarity.id === id);
+  if (index === -1) return RARITIES[0];
+  if (index === RARITIES.length - 1) return CREATION_RARITY;
+  return RARITIES[index + 1];
+}
+
+function cloneBonuses(bonuses) {
+  return {
+    attack: Number(bonuses?.attack || 0),
+    maxHp: Number(bonuses?.maxHp || 0),
+    attackSpeed: Number(bonuses?.attackSpeed || 0),
+    critChance: Number(bonuses?.critChance || 0),
+    critDamage: Number(bonuses?.critDamage || 0),
+    regen: Number(bonuses?.regen || 0),
+    goldRate: Number(bonuses?.goldRate || 0),
+    diamondRate: Number(bonuses?.diamondRate || 0),
+    bossDamage: Number(bonuses?.bossDamage || 0),
+    dungeonDamage: Number(bonuses?.dungeonDamage || 0),
+  };
+}
+
+function calculateItemScore(item) {
+  const bonus = item.bonuses;
+  return (
+    bonus.attack * 1.3 +
+    bonus.maxHp * 0.22 +
+    bonus.attackSpeed * 240 +
+    bonus.critChance * 950 +
+    bonus.critDamage * 240 +
+    bonus.regen * 80 +
+    bonus.goldRate * 220 +
+    bonus.diamondRate * 360 +
+    bonus.bossDamage * 520 +
+    bonus.dungeonDamage * 560 +
+    (item.isCreation ? 480 : 0) +
+    getRarityRank(item.rarity, item.isCreation) * 40
+  );
+}
+
+function normalizeItem(item) {
+  if (!item || typeof item !== "object") return null;
+
+  const isCreation = Boolean(item.isCreation || item.rarity === CREATION_RARITY.id);
+  const slotId = EQUIPMENT_SLOTS.some((slot) => slot.id === item.slot)
+    ? item.slot
+    : LEGACY_SLOT_MAP[item.slot] || "weapon";
+  const rarityId = isCreation
+    ? CREATION_RARITY.id
+    : RARITIES.some((rarity) => rarity.id === item.rarity)
+      ? item.rarity
+      : LEGACY_RARITY_MAP[item.rarity] || "common";
+  const rarity = getRarityData(rarityId, isCreation);
+  const normalized = {
+    id: Number(item.id || 0),
+    name: String(item.name || `${choose(ITEM_PREFIXES)} ${choose(ITEM_NAMES[slotId])}`),
+    slot: slotId,
+    rarity: rarity.id,
+    rarityLabel: rarity.label,
+    className: rarity.className,
+    source: String(item.source || (isCreation ? "창조 합성" : "다이아 뽑기")),
+    isCreation,
+    bonuses: cloneBonuses(item.bonuses),
+  };
+  normalized.score = calculateItemScore(normalized);
+  return normalized;
+}
+
+function hydrateState(saved) {
+  const base = createInitialState();
+  if (!saved || typeof saved !== "object") return base;
+
+  const inventory = Array.isArray(saved.equipment?.inventory)
+    ? saved.equipment.inventory.map((item) => normalizeItem(item)).filter(Boolean)
+    : [];
+
+  const equipped = createEquippedState();
+  EQUIPMENT_SLOTS.forEach((slot) => {
+    const rawEquipped =
+      saved.equipment?.equipped?.[slot.id] ||
+      (slot.id === "necklace" ? saved.equipment?.equipped?.sigil : null);
+    equipped[slot.id] = normalizeItem(rawEquipped);
+  });
+
+  const recentResults = Array.isArray(saved.gacha?.recentResults)
+    ? saved.gacha.recentResults.map((item) => normalizeItem(item)).filter(Boolean).slice(0, RECENT_DRAW_LIMIT)
+    : [];
+
+  return {
+    ...base,
+    resources: { ...base.resources, ...saved.resources },
+    hero: { ...base.hero, ...saved.hero },
+    upgrades: { ...base.upgrades, ...saved.upgrades },
+    blessings: { ...base.blessings, ...saved.blessings },
+    progress: { ...base.progress, ...saved.progress },
+    dungeons: {
+      active: saved.dungeons?.active ? { ...saved.dungeons.active } : null,
+      clears: { ...createDungeonClears(), ...(saved.dungeons?.clears || {}) },
+    },
+    equipment: {
+      nextId: Number(saved.equipment?.nextId || base.equipment.nextId),
+      inventory,
+      equipped,
+    },
+    gacha: { ...base.gacha, ...saved.gacha, recentResults },
+    forge: { ...base.forge, ...saved.forge },
+    settings: { ...base.settings, ...saved.settings },
+    combat: { ...base.combat, ...saved.combat, enemy: null },
+    logs: Array.isArray(saved.logs) ? saved.logs.slice(0, LOG_LIMIT) : [],
+    lastSeen: typeof saved.lastSeen === "number" ? saved.lastSeen : Date.now(),
+  };
+}
+
+function loadState() {
+  try {
+    const keys = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      return hydrateState(JSON.parse(raw));
+    }
+    return createInitialState();
+  } catch (error) {
+    console.warn("Failed to load save state.", error);
+    return createInitialState();
+  }
+}
+
+function saveState() {
+  state.lastSeen = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  LEGACY_STORAGE_KEYS.forEach((key) => {
+    if (key !== STORAGE_KEY) localStorage.removeItem(key);
+  });
+  lastSave = state.lastSeen;
 }
 
 function getProgressValue(world, stage) {
@@ -706,6 +845,7 @@ function getBlessingCost(key) {
   const def = BLESSING_DEFS[key];
   return Math.max(1, Math.floor(def.costBase * Math.pow(def.costGrowth, state.blessings[key])));
 }
+
 function getUpgradeBonuses() {
   return {
     attack: state.upgrades.attack * 10,
@@ -739,13 +879,11 @@ function getUnlockedRelics() {
 
 function getRelicBonuses() {
   const total = createEmptyBonuses();
-
   getUnlockedRelics().forEach((relic) => {
     Object.keys(relic.bonuses).forEach((key) => {
       total[key] += Number(relic.bonuses[key] || 0);
     });
   });
-
   return total;
 }
 
@@ -759,7 +897,7 @@ function getFinalStats() {
   const attack = (state.hero.attack + upgrade.attack + gear.attack + relic.attack) * (1 + state.blessings.edge * 0.08) * furyAttack;
   const maxHp = (state.hero.maxHp + upgrade.maxHp + gear.maxHp + relic.maxHp) * (1 + state.blessings.ward * 0.08);
   const attackSpeed = (state.hero.attackSpeed + upgrade.attackSpeed + gear.attackSpeed + relic.attackSpeed) * furySpeed;
-  const critChance = clamp(state.hero.critChance + upgrade.critChance + gear.critChance + relic.critChance, 0, 0.8);
+  const critChance = clamp(state.hero.critChance + upgrade.critChance + gear.critChance + relic.critChance, 0, 0.85);
   const critDamage = state.hero.critDamage + upgrade.critDamage + gear.critDamage + relic.critDamage;
   const regen = (state.hero.regen + upgrade.regen + gear.regen + relic.regen) * (1 + state.blessings.ward * 0.1);
   const goldRate = 1 + state.blessings.bounty * 0.12 + gear.goldRate + relic.goldRate;
@@ -793,7 +931,6 @@ function getFinalStats() {
     relic,
   };
 }
-
 function createLog(message) {
   const timestamp = new Date().toLocaleTimeString("ko-KR", {
     hour: "2-digit",
@@ -913,13 +1050,9 @@ function gainExperience(amount) {
     state.hero.maxHp += 18 + state.hero.level * 2.2;
     state.hero.regen += 0.22;
     if (state.hero.level % 4 === 0) state.hero.attackSpeed += 0.025;
-    if (state.hero.level % 5 === 0) state.hero.critChance = clamp(state.hero.critChance + 0.01, 0, 0.8);
+    if (state.hero.level % 5 === 0) state.hero.critChance = clamp(state.hero.critChance + 0.01, 0, 0.85);
     createLog(`영웅이 Lv.${state.hero.level}에 도달했습니다.`);
   }
-}
-
-function getRarityRank(id) {
-  return RARITIES.findIndex((rarity) => rarity.id === id);
 }
 
 function rollRarity(minRarity) {
@@ -951,96 +1084,151 @@ function rollRarity(minRarity) {
   return picked;
 }
 
-function calculateItemScore(item) {
-  const bonus = item.bonuses;
-  return (
-    bonus.attack * 1.3 +
-    bonus.maxHp * 0.22 +
-    bonus.attackSpeed * 240 +
-    bonus.critChance * 950 +
-    bonus.critDamage * 240 +
-    bonus.regen * 80 +
-    bonus.goldRate * 220 +
-    bonus.diamondRate * 360 +
-    bonus.bossDamage * 520 +
-    bonus.dungeonDamage * 560
-  );
-}
-
-function generateEquipmentItem(options = {}) {
-  const slot = choose(EQUIPMENT_SLOTS).id;
-  const rarityId = rollRarity(options.minRarity || null);
-  const rarity = RARITIES.find((entry) => entry.id === rarityId) || RARITIES[0];
-  const scale = 1 + state.progress.highestWorld * 0.12 + state.progress.highestStage * 0.015;
-  const bonuses = createEmptyBonuses();
-
-  if (slot === "weapon") {
-    bonuses.attack = Math.round(scale * 8 * rarity.multiplier);
-    bonuses.critDamage = 0.05 * rarity.multiplier;
-    bonuses.bossDamage = 0.025 * rarity.multiplier;
-  }
-  if (slot === "armor") {
-    bonuses.maxHp = Math.round(scale * 36 * rarity.multiplier);
-    bonuses.regen = 0.35 * rarity.multiplier;
-    bonuses.dungeonDamage = 0.02 * rarity.multiplier;
-  }
-  if (slot === "ring") {
-    bonuses.attackSpeed = 0.022 * rarity.multiplier;
-    bonuses.critChance = 0.006 * rarity.multiplier;
-    bonuses.goldRate = 0.04 * rarity.multiplier;
-    bonuses.diamondRate = 0.02 * rarity.multiplier;
-  }
-  if (slot === "sigil") {
-    bonuses.attack = Math.round(scale * 4 * rarity.multiplier);
-    bonuses.maxHp = Math.round(scale * 18 * rarity.multiplier);
-    bonuses.bossDamage = 0.02 * rarity.multiplier;
-    bonuses.dungeonDamage = 0.03 * rarity.multiplier;
-  }
-
-  const extraPool = [
-    () => {
-      bonuses.attack += Math.round(scale * 2 * rarity.multiplier);
+function getAffixPool(scale, multiplier) {
+  return [
+    (bonuses) => {
+      bonuses.attack += Math.round(scale * 2.2 * multiplier);
     },
-    () => {
-      bonuses.maxHp += Math.round(scale * 10 * rarity.multiplier);
+    (bonuses) => {
+      bonuses.maxHp += Math.round(scale * 12 * multiplier);
     },
-    () => {
-      bonuses.attackSpeed += 0.01 * rarity.multiplier;
+    (bonuses) => {
+      bonuses.attackSpeed += 0.012 * multiplier;
     },
-    () => {
-      bonuses.critChance += 0.003 * rarity.multiplier;
+    (bonuses) => {
+      bonuses.critChance += 0.0035 * multiplier;
     },
-    () => {
-      bonuses.goldRate += 0.015 * rarity.multiplier;
+    (bonuses) => {
+      bonuses.critDamage += 0.024 * multiplier;
     },
-    () => {
-      bonuses.diamondRate += 0.01 * rarity.multiplier;
+    (bonuses) => {
+      bonuses.regen += 0.28 * multiplier;
+    },
+    (bonuses) => {
+      bonuses.goldRate += 0.016 * multiplier;
+    },
+    (bonuses) => {
+      bonuses.diamondRate += 0.012 * multiplier;
+    },
+    (bonuses) => {
+      bonuses.bossDamage += 0.018 * multiplier;
+    },
+    (bonuses) => {
+      bonuses.dungeonDamage += 0.02 * multiplier;
     },
   ];
-  choose(extraPool)();
+}
+
+function applySlotBaseBonuses(slot, bonuses, scale, multiplier) {
+  if (slot === "helmet") {
+    bonuses.maxHp += Math.round(scale * 24 * multiplier);
+    bonuses.regen += 0.42 * multiplier;
+    bonuses.bossDamage += 0.012 * multiplier;
+  }
+  if (slot === "armor") {
+    bonuses.maxHp += Math.round(scale * 42 * multiplier);
+    bonuses.regen += 0.58 * multiplier;
+    bonuses.dungeonDamage += 0.018 * multiplier;
+  }
+  if (slot === "weapon") {
+    bonuses.attack += Math.round(scale * 10 * multiplier);
+    bonuses.critDamage += 0.06 * multiplier;
+    bonuses.bossDamage += 0.028 * multiplier;
+  }
+  if (slot === "ring") {
+    bonuses.critChance += 0.008 * multiplier;
+    bonuses.critDamage += 0.035 * multiplier;
+    bonuses.goldRate += 0.035 * multiplier;
+  }
+  if (slot === "necklace") {
+    bonuses.attack += Math.round(scale * 5 * multiplier);
+    bonuses.attackSpeed += 0.022 * multiplier;
+    bonuses.dungeonDamage += 0.025 * multiplier;
+  }
+  if (slot === "bracelet") {
+    bonuses.diamondRate += 0.028 * multiplier;
+    bonuses.critChance += 0.005 * multiplier;
+    bonuses.bossDamage += 0.02 * multiplier;
+  }
+  if (slot === "greaves") {
+    bonuses.maxHp += Math.round(scale * 18 * multiplier);
+    bonuses.attackSpeed += 0.018 * multiplier;
+    bonuses.dungeonDamage += 0.022 * multiplier;
+  }
+  if (slot === "gloves") {
+    bonuses.attack += Math.round(scale * 4.5 * multiplier);
+    bonuses.attackSpeed += 0.024 * multiplier;
+    bonuses.critChance += 0.004 * multiplier;
+  }
+  if (slot === "shoes") {
+    bonuses.regen += 0.36 * multiplier;
+    bonuses.attackSpeed += 0.016 * multiplier;
+    bonuses.goldRate += 0.026 * multiplier;
+  }
+}
+
+function applyRandomAffixes(bonuses, rarity, scale, isCreation) {
+  const pool = getAffixPool(scale, rarity.multiplier);
+  const extraCount = isCreation
+    ? 5
+    : rarity.id === "unique"
+      ? 4
+      : rarity.id === "mythic"
+        ? 3
+        : getRarityRank(rarity.id) >= getRarityRank("heroic")
+          ? 2
+          : 1;
+
+  for (let count = 0; count < extraCount && pool.length; count += 1) {
+    const index = Math.floor(Math.random() * pool.length);
+    const [affix] = pool.splice(index, 1);
+    affix(bonuses);
+  }
+}
+
+function createEquipmentItem(options = {}) {
+  const slot = options.slot || choose(EQUIPMENT_SLOTS).id;
+  const isCreation = Boolean(options.isCreation);
+  const rarity = isCreation
+    ? CREATION_RARITY
+    : getRarityData(options.rarityId || rollRarity(options.minRarity || null));
+  const scale = (1 + state.progress.highestWorld * 0.12 + state.progress.highestStage * 0.015) * (isCreation ? 1.26 : 1);
+  const bonuses = createEmptyBonuses();
+
+  applySlotBaseBonuses(slot, bonuses, scale, rarity.multiplier);
+  applyRandomAffixes(bonuses, rarity, scale, isCreation);
+
+  const name = isCreation
+    ? `${choose(CREATION_PREFIXES)} ${choose(CREATION_NAMES[slot])}`
+    : `${choose(ITEM_PREFIXES)} ${choose(ITEM_NAMES[slot])}`;
 
   const item = {
     id: state.equipment.nextId,
-    name: `${choose(ITEM_PREFIXES)} ${choose(ITEM_NAMES[slot])}`,
+    name,
     slot,
     rarity: rarity.id,
     rarityLabel: rarity.label,
     className: rarity.className,
-    source: options.source || "다이아 뽑기",
+    source: options.source || (isCreation ? "창조 합성" : "다이아 뽑기"),
+    isCreation,
     bonuses,
   };
+
   item.score = calculateItemScore(item);
   state.equipment.nextId += 1;
   return item;
 }
 
-function trimInventory() {
-  const equippedIds = new Set(
+function getEquippedIds() {
+  return new Set(
     EQUIPMENT_SLOTS.map((slot) => state.equipment.equipped[slot.id])
       .filter(Boolean)
       .map((item) => item.id),
   );
+}
 
+function trimInventory() {
+  const equippedIds = getEquippedIds();
   state.equipment.inventory.sort((a, b) => b.score - a.score);
   state.equipment.inventory = state.equipment.inventory.filter((item, index) => index < INVENTORY_LIMIT || equippedIds.has(item.id));
 }
@@ -1049,13 +1237,13 @@ function autoEquipItem(item) {
   const current = state.equipment.equipped[item.slot];
   if (!current || item.score > current.score) {
     state.equipment.equipped[item.slot] = item;
-    createLog(`${item.name} 장비를 ${EQUIPMENT_SLOTS.find((slot) => slot.id === item.slot).label} 슬롯에 장착했습니다.`);
+    createLog(`${item.name} 장비를 ${getSlotLabel(item.slot)} 슬롯에 장착했습니다.`);
   }
 }
 
-function addItemToInventory(item) {
+function addItemToInventory(item, options = {}) {
   state.equipment.inventory.unshift(item);
-  autoEquipItem(item);
+  if (options.autoEquip !== false) autoEquipItem(item);
   trimInventory();
 }
 
@@ -1068,13 +1256,13 @@ function drawEquipment(count, options = {}) {
 
   const results = [];
   for (let index = 0; index < count; index += 1) {
-    const item = generateEquipmentItem(options);
+    const item = createEquipmentItem(options);
     addItemToInventory(item);
     results.push(item);
   }
 
   state.gacha.totalDraws += count;
-  state.gacha.recentResults = [...results.reverse(), ...state.gacha.recentResults].slice(0, 8);
+  state.gacha.recentResults = [...results.reverse(), ...state.gacha.recentResults].slice(0, RECENT_DRAW_LIMIT);
   createLog(`${options.source || "장비 뽑기"}로 장비 ${count}개를 획득했습니다.`);
   return results;
 }
@@ -1084,6 +1272,78 @@ function equipItemById(id) {
   if (!item) return;
   state.equipment.equipped[item.slot] = item;
   createLog(`${item.name} 장비를 수동으로 장착했습니다.`);
+}
+
+function getSynthesisGroups() {
+  const equippedIds = getEquippedIds();
+  const grouped = {};
+
+  state.equipment.inventory.forEach((item) => {
+    if (item.isCreation) return;
+    if (equippedIds.has(item.id)) return;
+    const key = `${item.slot}:${item.rarity}`;
+    if (!grouped[key]) {
+      grouped[key] = {
+        key,
+        slot: item.slot,
+        rarity: item.rarity,
+        items: [],
+      };
+    }
+    grouped[key].items.push(item);
+  });
+
+  return Object.values(grouped)
+    .map((group) => {
+      const rarity = getRarityData(group.rarity);
+      const target = getNextRarity(group.rarity);
+      return {
+        ...group,
+        slotLabel: getSlotLabel(group.slot),
+        rarityLabel: rarity.label,
+        target,
+        count: group.items.length,
+        canSynthesize: group.items.length >= SYNTHESIS_REQUIREMENT,
+      };
+    })
+    .sort((left, right) => {
+      if (left.canSynthesize !== right.canSynthesize) return left.canSynthesize ? -1 : 1;
+      const rankDiff = getRarityRank(right.rarity) - getRarityRank(left.rarity);
+      if (rankDiff !== 0) return rankDiff;
+      return left.slotLabel.localeCompare(right.slotLabel, "ko");
+    });
+}
+
+function synthesizeItems(slot, rarityId) {
+  const equippedIds = getEquippedIds();
+  const candidates = state.equipment.inventory
+    .filter((item) => item.slot === slot && item.rarity === rarityId && !item.isCreation && !equippedIds.has(item.id))
+    .sort((left, right) => left.score - right.score);
+
+  if (candidates.length < SYNTHESIS_REQUIREMENT) return;
+
+  const consumed = candidates.slice(0, SYNTHESIS_REQUIREMENT);
+  const consumedIds = new Set(consumed.map((item) => item.id));
+  state.equipment.inventory = state.equipment.inventory.filter((item) => !consumedIds.has(item.id));
+
+  const resultRarity = getNextRarity(rarityId);
+  const result = createEquipmentItem({
+    slot,
+    rarityId: resultRarity.id === CREATION_RARITY.id ? null : resultRarity.id,
+    isCreation: resultRarity.id === CREATION_RARITY.id,
+    source: resultRarity.id === CREATION_RARITY.id ? "창조 합성" : `${getRarityData(rarityId).label} 합성`,
+  });
+
+  addItemToInventory(result);
+  state.forge.totalSynths += 1;
+  if (result.isCreation) state.forge.totalCreations += 1;
+  state.gacha.recentResults = [result, ...state.gacha.recentResults].slice(0, RECENT_DRAW_LIMIT);
+
+  if (result.isCreation) {
+    createLog(`${getSlotLabel(slot)} 유일 장비 3개를 융합해 창조 아이템 ${result.name}을 제작했습니다.`);
+  } else {
+    createLog(`${getSlotLabel(slot)} ${getRarityData(rarityId).label} 장비 3개를 합성해 ${result.rarityLabel} 등급을 제작했습니다.`);
+  }
 }
 function handleCampaignVictory(enemy) {
   const stats = getFinalStats();
@@ -1249,12 +1509,23 @@ function normalizeState() {
   state.resources.essence = Math.max(0, Number(state.resources.essence || 0));
   state.gacha.pity = clamp(Number(state.gacha.pity || 0), 0, 29);
   state.gacha.totalDraws = Math.max(0, Number(state.gacha.totalDraws || 0));
+  state.forge.totalSynths = Math.max(0, Number(state.forge?.totalSynths || 0));
+  state.forge.totalCreations = Math.max(0, Number(state.forge?.totalCreations || 0));
   state.equipment.nextId = Math.max(1, Number(state.equipment.nextId || 1));
-  state.equipment.inventory = Array.isArray(state.equipment.inventory) ? state.equipment.inventory : [];
-  state.gacha.recentResults = Array.isArray(state.gacha.recentResults) ? state.gacha.recentResults.slice(0, 8) : [];
-  state.settings.activeMenu = ["upgrades", "equipment", "inventory", "relics", "dungeons", "status", "log"].includes(state.settings.activeMenu)
+  state.equipment.inventory = Array.isArray(state.equipment.inventory) ? state.equipment.inventory.map((item) => normalizeItem(item)).filter(Boolean) : [];
+  state.gacha.recentResults = Array.isArray(state.gacha.recentResults)
+    ? state.gacha.recentResults.map((item) => normalizeItem(item)).filter(Boolean).slice(0, RECENT_DRAW_LIMIT)
+    : [];
+  state.settings.activeMenu = ["upgrades", "equipment", "inventory", "synthesis", "relics", "dungeons", "status", "log"].includes(state.settings.activeMenu)
     ? state.settings.activeMenu
     : "upgrades";
+
+  EQUIPMENT_SLOTS.forEach((slot) => {
+    state.equipment.equipped[slot.id] = normalizeItem(state.equipment.equipped?.[slot.id]);
+  });
+
+  const maxItemId = state.equipment.inventory.reduce((maxId, item) => Math.max(maxId, Number(item.id || 0)), 0);
+  state.equipment.nextId = Math.max(state.equipment.nextId, maxItemId + 1);
 
   if (getProgressValue(state.progress.highestWorld, state.progress.highestStage) < getProgressValue(state.progress.world, state.progress.stage)) {
     state.progress.highestWorld = state.progress.world;
@@ -1335,36 +1606,7 @@ function formatBonusChips(bonuses) {
   if (bonuses.diamondRate) chips.push(`Dia +${formatPercent(bonuses.diamondRate)}`);
   if (bonuses.bossDamage) chips.push(`Boss +${formatPercent(bonuses.bossDamage)}`);
   if (bonuses.dungeonDamage) chips.push(`Dungeon +${formatPercent(bonuses.dungeonDamage)}`);
-  return chips.slice(0, 4);
-}
-
-function renderEquipmentSlots() {
-  refs.equipmentSlots.innerHTML = EQUIPMENT_SLOTS.map((slot) => {
-    const item = state.equipment.equipped[slot.id];
-    if (!item) {
-      return `
-        <div class="equipment-card">
-          <div class="slot-title">
-            <strong>${slot.label}</strong>
-            <em>비어 있음</em>
-          </div>
-          <span>장비 뽑기로 새로운 아이템을 획득해 보세요.</span>
-        </div>
-      `;
-    }
-    return `
-      <div class="equipment-card ${item.className}">
-        <div class="slot-title">
-          <strong>${slot.label}</strong>
-          <em class="rarity-label">${item.rarityLabel}</em>
-        </div>
-        <span>${item.name}</span>
-        <div class="equipment-bonuses">
-          ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
-        </div>
-      </div>
-    `;
-  }).join("");
+  return chips.slice(0, 5);
 }
 
 function getUpgradeCurrentEffectText(key, level) {
@@ -1386,18 +1628,52 @@ function getUpgradeNextEffectText(key, level) {
   if (key === "tempo") return "다음 레벨: 공격 속도 +0.06/s";
   return "다음 레벨: 치명타 +0.8%, 치명타 피해 +5%";
 }
+function renderEquipmentSlots() {
+  refs.equipmentSlots.innerHTML = EQUIPMENT_SLOTS.map((slot) => {
+    const item = state.equipment.equipped[slot.id];
+    if (!item) {
+      return `
+        <div class="equipment-card">
+          <div class="slot-title">
+            <strong>${slot.label}</strong>
+            <em>비어 있음</em>
+          </div>
+          <span>장비 뽑기나 합성으로 ${slot.label} 장비를 획득하세요.</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="equipment-card ${item.className}">
+        <div class="slot-title">
+          <strong>${slot.label}</strong>
+          <em class="rarity-label">${item.rarityLabel}</em>
+        </div>
+        <span>${item.name}</span>
+        <div class="equipment-bonuses">
+          ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
+        </div>
+        <div class="slot-footer">
+          <span class="source-tag ${item.isCreation ? "creation-tag" : ""}">${item.source}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
 
 function renderUpgradeList() {
   refs.upgradeList.innerHTML = Object.keys(UPGRADE_DEFS).map((key) => {
     const def = UPGRADE_DEFS[key];
     const level = state.upgrades[key];
     const cost = getUpgradeCost(key);
+    const affordable = state.resources.gold >= cost;
+
     return `
-      <button class="action-card" data-upgrade="${key}" ${state.resources.gold < cost ? "disabled" : ""}>
+      <div class="action-card upgrade-card">
         <div class="action-title">
           <div>
             <strong>${def.label} Lv.${level}</strong>
-            <small>${cost} Gold</small>
+            <small>${formatNumber(cost)} Gold</small>
           </div>
         </div>
         <p class="action-description">${def.description}</p>
@@ -1405,7 +1681,11 @@ function renderUpgradeList() {
           <span>현재 효과: ${getUpgradeCurrentEffectText(key, level)}</span>
           <span>${getUpgradeNextEffectText(key, level)}</span>
         </div>
-      </button>
+        <div class="action-footer">
+          <span class="action-price ${affordable ? "" : "is-blocked"}">보유 Gold ${formatNumber(state.resources.gold)}</span>
+          <button class="action-button" data-upgrade="${key}" ${affordable ? "" : "disabled"}>강화</button>
+        </div>
+      </div>
     `;
   }).join("");
 }
@@ -1415,6 +1695,7 @@ function renderBlessingList() {
     const def = BLESSING_DEFS[key];
     const level = state.blessings[key];
     const cost = getBlessingCost(key);
+    const affordable = state.resources.essence >= cost;
     let currentText = "";
     let nextText = "";
 
@@ -1432,11 +1713,11 @@ function renderBlessingList() {
     }
 
     return `
-      <button class="action-card blessing" data-blessing="${key}" ${state.resources.essence < cost ? "disabled" : ""}>
+      <div class="action-card blessing">
         <div class="action-title">
           <div>
             <strong>${def.label} Lv.${level}</strong>
-            <small>${cost} Essence</small>
+            <small>${formatNumber(cost)} Essence</small>
           </div>
         </div>
         <p class="action-description">${def.description}</p>
@@ -1444,11 +1725,18 @@ function renderBlessingList() {
           <span>현재 효과: ${currentText}</span>
           <span>${nextText}</span>
         </div>
-      </button>
+        <div class="action-footer">
+          <span class="action-price ${affordable ? "" : "is-blocked"}">보유 Essence ${formatNumber(state.resources.essence)}</span>
+          <button class="action-button" data-blessing="${key}" ${affordable ? "" : "disabled"}>축복</button>
+        </div>
+      </div>
     `;
   }).join("");
 }
+
 function renderStatusList(stats) {
+  const equippedCount = EQUIPMENT_SLOTS.filter((slot) => state.equipment.equipped[slot.id]).length;
+  const creationCount = state.equipment.inventory.filter((item) => item.isCreation).length;
   const rows = [
     {
       label: "최종 공격력",
@@ -1501,14 +1789,29 @@ function renderStatusList(stats) {
       detail: "던전 내부 적에게만 적용",
     },
     {
-      label: "예상 DPS",
-      value: formatNumber(stats.dps),
-      detail: state.combat.furyRemaining > 0 ? "광란 버프 적용 중" : "평상시 기준 예상 수치",
+      label: "장착 슬롯",
+      value: `${equippedCount} / ${EQUIPMENT_SLOTS.length}`,
+      detail: "9개 부위 장비가 모두 장착되면 전투 효율이 크게 올라갑니다.",
+    },
+    {
+      label: "장비 합성",
+      value: `${formatNumber(state.forge.totalSynths)}회`,
+      detail: `창조 아이템 제작 ${formatNumber(state.forge.totalCreations)}회`,
+    },
+    {
+      label: "창조 아이템",
+      value: `${creationCount}개`,
+      detail: "창조 아이템은 뽑기에서 나오지 않고 합성으로만 제작됩니다.",
     },
     {
       label: "활성 유물",
       value: `${getUnlockedRelics().length} / ${RELICS.length}`,
       detail: "월드 도달과 던전 클리어로 유물이 활성화됩니다.",
+    },
+    {
+      label: "예상 DPS",
+      value: formatNumber(stats.dps),
+      detail: state.combat.furyRemaining > 0 ? "광란 버프 적용 중" : "평상시 기준 예상 수치",
     },
   ];
 
@@ -1545,7 +1848,7 @@ function renderDungeonList() {
           <span class="bonus-chip">Floor ${dungeon.floors}</span>
           <span class="bonus-chip">Diamond ${dungeon.diamondReward}</span>
           <span class="bonus-chip">Essence ${dungeon.essenceReward}</span>
-          <span class="bonus-chip">보장 ${dungeon.guaranteedRarity}</span>
+          <span class="bonus-chip">보장 ${getRarityData(dungeon.guaranteedRarity).label}</span>
         </div>
         <span>${dungeon.modifier}</span>
       </div>
@@ -1558,7 +1861,7 @@ function renderRecentDraws() {
     refs.recentDraws.innerHTML = `
       <div class="draw-card">
         <strong>최근 장비 없음</strong>
-        <span>다이아를 사용해 장비를 뽑으면 이곳에 표시됩니다.</span>
+        <span>다이아를 사용해 장비를 뽑거나 합성을 진행하면 이곳에 표시됩니다.</span>
       </div>
     `;
     return;
@@ -1570,7 +1873,7 @@ function renderRecentDraws() {
         <strong>${item.name}</strong>
         <span class="rarity-label">${item.rarityLabel}</span>
       </div>
-      <span>${EQUIPMENT_SLOTS.find((slot) => slot.id === item.slot).label} · ${item.source}</span>
+      <span>${getSlotLabel(item.slot)} · ${item.source}</span>
       <div class="draw-bonuses">
         ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
       </div>
@@ -1579,7 +1882,7 @@ function renderRecentDraws() {
 }
 
 function renderInventoryList() {
-  const sorted = [...state.equipment.inventory].sort((a, b) => b.score - a.score).slice(0, 10);
+  const sorted = [...state.equipment.inventory].sort((left, right) => right.score - left.score).slice(0, 18);
   if (!sorted.length) {
     refs.inventoryList.innerHTML = `
       <div class="inventory-card">
@@ -1597,15 +1900,19 @@ function renderInventoryList() {
         <div class="inventory-top">
           <div>
             <strong>${item.name}</strong>
-            <span>${EQUIPMENT_SLOTS.find((slot) => slot.id === item.slot).label} · 점수 ${formatNumber(item.score)}</span>
+            <span>${getSlotLabel(item.slot)} · 점수 ${formatNumber(item.score)}</span>
           </div>
           <em class="rarity-label">${item.rarityLabel}</em>
+        </div>
+        <div class="inventory-meta">
+          <span class="slot-badge">${getSlotLabel(item.slot)}</span>
+          <span class="source-tag ${item.isCreation ? "creation-tag" : ""}">${item.source}</span>
         </div>
         <div class="inventory-bonuses">
           ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
         </div>
         <div class="inventory-actions">
-          <span>${item.source}</span>
+          <span>${equipped ? "현재 장착 중" : "수동 장착 가능"}</span>
           <button class="inventory-equip" data-equip="${item.id}" ${equipped ? "disabled" : ""}>
             ${equipped ? "장착 중" : "장착"}
           </button>
@@ -1613,6 +1920,44 @@ function renderInventoryList() {
       </div>
     `;
   }).join("");
+}
+
+function renderSynthesisList() {
+  const groups = getSynthesisGroups();
+  if (!groups.length) {
+    refs.synthesisList.innerHTML = `
+      <div class="synthesis-card">
+        <strong>합성 가능한 장비 없음</strong>
+        <span>같은 부위, 같은 등급의 미장착 장비 3개가 모이면 합성을 진행할 수 있습니다.</span>
+      </div>
+    `;
+    return;
+  }
+
+  refs.synthesisList.innerHTML = groups.map((group) => `
+    <div class="synthesis-card ${group.canSynthesize ? "is-ready" : ""}">
+      <div class="synthesis-header">
+        <div>
+          <strong>${group.slotLabel} · ${group.rarityLabel}</strong>
+          <span>${group.count} / ${SYNTHESIS_REQUIREMENT} 보유</span>
+        </div>
+        <em class="rarity-label">${group.target.label}</em>
+      </div>
+      <p class="action-description">
+        ${group.target.id === CREATION_RARITY.id
+          ? "유일 장비 3개를 승화시켜 뽑기로는 얻을 수 없는 창조 아이템을 제작합니다."
+          : `${group.rarityLabel} 장비 3개를 소모해 ${group.target.label} 등급 장비 1개를 제작합니다.`}
+      </p>
+      <div class="dungeon-rewards">
+        <span class="bonus-chip">부위 ${group.slotLabel}</span>
+        <span class="bonus-chip">소모 ${SYNTHESIS_REQUIREMENT}개</span>
+        <span class="bonus-chip">결과 ${group.target.label}</span>
+      </div>
+      <button class="action-button synthesis-button" data-synth="${group.slot}|${group.rarity}" ${group.canSynthesize ? "" : "disabled"}>
+        ${group.target.id === CREATION_RARITY.id ? "창조 합성" : `${group.target.label} 제작`}
+      </button>
+    </div>
+  `).join("");
 }
 
 function renderRelicList() {
@@ -1660,7 +2005,6 @@ function renderLog() {
     .map((entry) => `<div class="log-entry"><strong>[${entry.timestamp}]</strong> ${entry.text}</div>`)
     .join("");
 }
-
 function render() {
   const stats = getFinalStats();
   const worldInfo = getWorldInfo(state.progress.world);
@@ -1741,6 +2085,7 @@ function render() {
   renderDungeonList();
   renderRecentDraws();
   renderInventoryList();
+  renderSynthesisList();
   renderRelicList();
   renderMenuViews();
   renderLog();
@@ -1822,6 +2167,14 @@ function bindEvents() {
     render();
   });
 
+  refs.synthesisList.addEventListener("click", (event) => {
+    const button = getActionButton(event, "[data-synth]");
+    if (!button) return;
+    const [slot, rarity] = button.dataset.synth.split("|");
+    synthesizeItems(slot, rarity);
+    render();
+  });
+
   window.addEventListener("beforeunload", saveState);
 }
 
@@ -1832,7 +2185,7 @@ function init() {
   simulateOfflineProgress();
 
   if (!state.logs.length) {
-    createLog("원정대가 첫 월드에 진입했습니다. 다이아로 장비를 뽑아 전력을 끌어올리세요.");
+    createLog("원정대가 첫 월드에 진입했습니다. 다이아로 장비를 뽑고, 같은 장비 3개는 합성해 더 높은 등급을 노려 보세요.");
   }
 
   if (!state.combat.enemy) createEnemy();

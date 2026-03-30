@@ -167,7 +167,8 @@ h3 {
 .status-card span,
 .dungeon-card span,
 .draw-card span,
-.inventory-card span {
+.inventory-card span,
+.synthesis-card span {
   display: block;
   font-size: 0.82rem;
   color: var(--text-dim);
@@ -389,20 +390,22 @@ h3 {
 .status-list,
 .dungeon-list,
 .card-list,
-.inventory-list {
+.inventory-list,
+.synthesis-list {
   display: grid;
   gap: 10px;
 }
 
 .equipment-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .equipment-card,
 .status-card,
 .dungeon-card,
 .draw-card,
-.inventory-card {
+.inventory-card,
+.synthesis-card {
   padding: 14px 15px;
   border-radius: var(--radius-md);
   background:
@@ -414,7 +417,8 @@ h3 {
 .status-card strong,
 .dungeon-card strong,
 .draw-card strong,
-.inventory-card strong {
+.inventory-card strong,
+.synthesis-card strong {
   display: block;
   margin-top: 4px;
 }
@@ -459,10 +463,13 @@ input {
 
 .ghost-button,
 .skill-button,
-.action-card,
-.inventory-equip {
+.inventory-equip,
+.action-button,
+.synthesis-button,
+.menu-tab {
   border: 0;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     transform 0.18s ease,
     opacity 0.18s ease,
@@ -480,15 +487,17 @@ input {
 
 .ghost-button:hover,
 .skill-button:hover,
-.action-card:hover,
-.inventory-equip:hover {
+.inventory-equip:hover,
+.action-button:hover,
+.synthesis-button:hover {
   transform: translateY(-1px);
 }
 
 .ghost-button:disabled,
 .skill-button:disabled,
-.action-card:disabled,
-.inventory-equip:disabled {
+.inventory-equip:disabled,
+.action-button:disabled,
+.synthesis-button:disabled {
   opacity: 0.46;
   cursor: not-allowed;
   transform: none;
@@ -730,6 +739,31 @@ input {
   font-size: 0.84rem;
 }
 
+.action-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.action-price {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.action-price.is-blocked {
+  color: #ef8e8e;
+}
+
+.action-button {
+  padding: 9px 14px;
+  border-radius: 999px;
+  color: var(--text-main);
+  background: linear-gradient(135deg, rgba(255, 190, 89, 0.9), rgba(255, 140, 74, 0.94));
+  box-shadow: 0 12px 24px rgba(255, 140, 74, 0.18);
+}
+
 .status-card {
   display: flex;
   justify-content: space-between;
@@ -759,11 +793,34 @@ input {
   gap: 10px;
 }
 
+.inventory-meta,
+.slot-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .inventory-actions {
   display: flex;
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+}
+
+.slot-badge,
+.source-tag {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-soft);
+  font-size: 0.75rem;
+}
+
+.creation-tag {
+  background: rgba(255, 148, 191, 0.14);
+  color: #ffc6df;
+  border: 1px solid rgba(255, 148, 191, 0.24);
 }
 
 .inventory-equip {
@@ -774,15 +831,36 @@ input {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.synthesis-card.is-ready {
+  border-color: rgba(255, 219, 135, 0.32);
+  box-shadow: 0 0 0 1px rgba(255, 219, 135, 0.12) inset;
+}
+
+.synthesis-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.synthesis-button {
+  margin-top: 12px;
+  width: 100%;
+}
+
 .rarity-common {
   border-color: rgba(196, 196, 196, 0.18);
+}
+
+.rarity-advanced {
+  border-color: rgba(146, 214, 255, 0.28);
 }
 
 .rarity-rare {
   border-color: rgba(110, 217, 255, 0.36);
 }
 
-.rarity-epic {
+.rarity-heroic {
   border-color: rgba(198, 122, 255, 0.42);
 }
 
@@ -793,6 +871,18 @@ input {
 .rarity-mythic {
   border-color: rgba(255, 114, 150, 0.46);
   box-shadow: 0 0 0 1px rgba(255, 114, 150, 0.18) inset;
+}
+
+.rarity-unique {
+  border-color: rgba(141, 224, 212, 0.46);
+  box-shadow: 0 0 0 1px rgba(141, 224, 212, 0.16) inset;
+}
+
+.rarity-creation {
+  border-color: rgba(255, 200, 120, 0.62);
+  box-shadow:
+    0 0 0 1px rgba(255, 200, 120, 0.2) inset,
+    0 0 28px rgba(255, 151, 90, 0.14);
 }
 
 .rarity-label {

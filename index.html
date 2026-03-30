@@ -6,7 +6,7 @@
     <title>RPG_IDLE | Ashen Keep</title>
     <meta
       name="description"
-      content="100 x 100 스테이지, 던전 해금, 다이아 장비 뽑기가 포함된 방치형 RPG 프로토타입"
+      content="100 x 100 스테이지, 던전, 장비 뽑기, 장비 합성, 유물 해금이 포함된 방치형 RPG 프로토타입"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,7 +26,7 @@
           <p class="eyebrow">Idle RPG Prototype</p>
           <h1>Ashen Keep</h1>
           <p class="subtitle">
-            100개의 월드와 100개의 세부 스테이지를 돌파하고, 던전과 장비 뽑기로 원정대를 성장시키세요.
+            100개의 월드와 세부 100 스테이지를 돌파하고, 던전과 장비 뽑기, 장비 합성으로 원정대를 성장시키세요.
           </p>
         </div>
 
@@ -89,7 +89,7 @@
                   <strong id="hpValue">0 / 0</strong>
                 </div>
                 <div>
-                  <span>공속</span>
+                  <span>공격 속도</span>
                   <strong id="speedValue">0</strong>
                 </div>
                 <div>
@@ -195,7 +195,7 @@
               <strong id="drawCountValue">0</strong>
             </div>
             <div class="summary-card">
-              <span>패배</span>
+              <span>사망</span>
               <strong id="deathValue">0</strong>
             </div>
           </div>
@@ -212,7 +212,7 @@
             <div class="bar-track large">
               <div class="bar-fill campaign-fill" id="campaignBar"></div>
             </div>
-            <p class="next-unlock" id="nextUnlockValue">다음 던전 해금 정보 확인 중</p>
+            <p class="next-unlock" id="nextUnlockValue">다음 던전 해금 정보를 확인 중</p>
           </div>
         </section>
 
@@ -226,6 +226,7 @@
               <button class="menu-tab is-active" data-menu="upgrades">업그레이드</button>
               <button class="menu-tab" data-menu="equipment">장비창</button>
               <button class="menu-tab" data-menu="inventory">인벤토리</button>
+              <button class="menu-tab" data-menu="synthesis">합성</button>
               <button class="menu-tab" data-menu="relics">유물창</button>
               <button class="menu-tab" data-menu="dungeons">던전</button>
               <button class="menu-tab" data-menu="status">스테이터스</button>
@@ -269,7 +270,7 @@
                   <strong id="diamondMetaValue">0</strong>
                 </div>
                 <div class="summary-card">
-                  <span>전설 보정</span>
+                  <span>천장 게이지</span>
                   <strong id="drawPityValue">0 / 30</strong>
                 </div>
               </div>
@@ -298,10 +299,18 @@
             </div>
           </div>
 
+          <div class="menu-view" data-view="synthesis">
+            <div class="subsection-title">
+              <span>Forge</span>
+              <strong>장비 합성</strong>
+            </div>
+            <div class="synthesis-list" id="synthesisList"></div>
+          </div>
+
           <div class="menu-view" data-view="relics">
             <div class="subsection-title">
               <span>Relics</span>
-              <strong>유물 보관함</strong>
+              <strong>유물 보관고</strong>
             </div>
             <div class="card-list" id="relicList"></div>
           </div>
@@ -328,7 +337,7 @@
           <div class="menu-view" data-view="log">
             <div class="subsection-title">
               <span>Battle Log</span>
-              <strong>전황 보고</strong>
+              <strong>전투 보고</strong>
             </div>
             <div class="combat-log" id="combatLog"></div>
           </div>
@@ -336,6 +345,6 @@
       </main>
     </div>
 
-    <script type="module" charset="UTF-8" src="./app.js"></script>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
