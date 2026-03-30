@@ -2074,6 +2074,32 @@ function getActionButton(event, selector) {
   return target instanceof Element ? target.closest(selector) : null;
 }
 
+function bindPressAction(container, selector, handler) {
+  let lastPointerDownAt = -Infinity;
+
+  // The management lists are re-rendered every frame, so regular click events
+  // can be lost before mouseup. Handle pointerdown first and keep click as a
+  // keyboard/accessibility fallback.
+  container.addEventListener("pointerdown", (event) => {
+    if (typeof event.button === "number" && event.button !== 0) return;
+    const button = getActionButton(event, selector);
+    if (!button) return;
+    lastPointerDownAt = event.timeStamp;
+    handler(button);
+    event.preventDefault();
+  });
+
+  container.addEventListener("click", (event) => {
+    const button = getActionButton(event, selector);
+    if (!button) return;
+    if (event.timeStamp - lastPointerDownAt < 700) {
+      event.preventDefault();
+      return;
+    }
+    handler(button);
+  });
+}
+
 function renderLog() {
   refs.combatLog.innerHTML = state.logs
     .map((entry) => `<div class="log-entry"><strong>[${entry.timestamp}]</strong> ${entry.text}</div>`)
@@ -2213,54 +2239,52 @@ function bindEvents() {
     render();
   });
 
-  refs.upgradeList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-upgrade], [data-upgrade-card]");
-    if (!button) return;
+  bindPressAction(refs.upgradeList, "[data-upgrade], [data-upgrade-card]", (button) => {
     purchaseUpgrade(button.dataset.upgrade || button.dataset.upgradeCard);
     render();
   });
 
-  refs.blessingList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-blessing], [data-blessing-card]");
-    if (!button) return;
+  bindPressAction(refs.blessingList, "[data-blessing], [data-blessing-card]", (button) => {
     purchaseBlessing(button.dataset.blessing || button.dataset.blessingCard);
+    render();
+  });
+
+  bindPressAction(refs.equipmentSlots, "[data-equip-tab]", (filterButton) => {
+    state.settings.equipmentFilter = filterButton.dataset.equipTab;
+    render();
+  });
+
+  bindPressAction(refs.equipmentSlots, "[data-equip]", (equipButton) => {
+    equipItemById(Number(equipButton.dataset.equip));
+    render();
+  });
+
+  bindPressAction(refs.dungeonList, "[data-dungeon]", (button) => {
+    startDungeon(button.dataset.dungeon);
+    render();
+  });
+
+  bindPressAction(refs.inventoryList, "[data-equip]", (button) => {
+    equipItemById(Number(button.dataset.equip));
+    render();
+  });
+
+  bindPressAction(refs.synthesisList, "[data-synth]", (button) => {
+    const [slot, rarity] = button.dataset.synth.split("|");
+    synthesizeItems(slot, rarity);
     render();
   });
 
   refs.equipmentSlots.addEventListener("click", (event) => {
     const filterButton = getActionButton(event, "[data-equip-tab]");
     if (filterButton) {
-      state.settings.equipmentFilter = filterButton.dataset.equipTab;
-      render();
       return;
     }
 
     const equipButton = getActionButton(event, "[data-equip]");
-    if (!equipButton) return;
-    equipItemById(Number(equipButton.dataset.equip));
-    render();
-  });
-
-  refs.dungeonList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-dungeon]");
-    if (!button) return;
-    startDungeon(button.dataset.dungeon);
-    render();
-  });
-
-  refs.inventoryList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-equip]");
-    if (!button) return;
-    equipItemById(Number(button.dataset.equip));
-    render();
-  });
-
-  refs.synthesisList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-synth]");
-    if (!button) return;
-    const [slot, rarity] = button.dataset.synth.split("|");
-    synthesizeItems(slot, rarity);
-    render();
+    if (equipButton) {
+      return;
+    }
   });
 
   window.addEventListener("beforeunload", saveState);
