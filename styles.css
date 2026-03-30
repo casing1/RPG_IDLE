@@ -397,7 +397,11 @@ h3 {
 }
 
 .equipment-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.equipment-grid > .equipment-layout {
+  min-width: 0;
 }
 
 .equipment-card,
@@ -1131,7 +1135,9 @@ input {
   .management-panel {
     grid-column: 1 / -1;
   }
+}
 
+@media (max-width: 1240px) {
   .equipment-layout {
     grid-template-columns: 1fr;
   }
