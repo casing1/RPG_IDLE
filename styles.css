@@ -814,6 +814,7 @@ input {
 
 .loadout-board,
 .equipment-arsenal {
+  min-width: 0;
   padding: 16px;
   border-radius: var(--radius-lg);
   background:
@@ -920,13 +921,17 @@ input {
 
 .slot-item-name {
   margin-top: 10px;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .equipment-tabbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .equipment-filter-tab {
@@ -951,6 +956,7 @@ input {
 
 .equipment-preview-card,
 .equipment-preview-empty {
+  min-width: 0;
   padding: 14px;
   border-radius: var(--radius-md);
   background:
@@ -961,6 +967,12 @@ input {
 .equipment-preview-card {
   display: grid;
   gap: 10px;
+}
+
+.equipment-preview-card strong,
+.equipment-preview-empty strong {
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .equipment-preview-empty {
@@ -1109,7 +1121,7 @@ input {
   color: var(--text-main);
 }
 
-@media (max-width: 1260px) {
+@media (max-width: 1380px) {
   .dashboard {
     grid-template-columns: 1fr;
   }
@@ -1119,6 +1131,54 @@ input {
   .management-panel {
     grid-column: 1 / -1;
   }
+
+  .equipment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .hero-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .resource-rack,
+  .battle-summary,
+  .gacha-meta,
+  .menu-columns,
+  .stat-grid,
+  .equipment-preview-grid,
+  .equipment-preview-placeholder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .duel-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-center {
+    order: -1;
+  }
+}
+
+@media (max-width: 980px) {
+  .loadout-avatar {
+    grid-template-columns: 1fr;
+  }
+
+  .loadout-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .equipment-preview-grid,
+  .equipment-preview-placeholder-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {
@@ -1127,9 +1187,7 @@ input {
     margin: 12px auto 22px;
   }
 
-  .hero-header,
   .section-heading,
-  .duel-stage,
   .hero-card,
   .progress-head {
     grid-template-columns: 1fr;
@@ -1137,28 +1195,17 @@ input {
     align-items: stretch;
   }
 
-  .dashboard,
   .resource-rack,
-  .battle-summary,
-  .gacha-meta,
-  .menu-columns,
   .equipment-grid,
-  .equipment-layout,
-  .equipment-preview-grid,
   .stat-grid {
     grid-template-columns: 1fr;
-  }
-
-  .stage-center {
-    order: -1;
   }
 
   .inventory-toolbar,
   .dungeon-toolbar,
   .gacha-actions,
   .menu-tabs,
-  .loadout-avatar,
-  .equipment-tabbar {
+  .loadout-avatar {
     flex-direction: column;
     align-items: stretch;
   }
