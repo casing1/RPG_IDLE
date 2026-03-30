@@ -1,12 +1,157 @@
-// Generated from src/app.ts
-
 const STORAGE_KEY = "rpg_idle_ashen_keep_v1";
 const SAVE_INTERVAL_MS = 5000;
 const BOSS_WAVE_TARGET = 6;
 const MAX_OFFLINE_SECONDS = 4 * 60 * 60;
 const LOG_LIMIT = 24;
 
-const ZONES = [
+type UpgradeKey = "attack" | "vitality" | "tempo" | "focus";
+type BlessingKey = "edge" | "bounty" | "ward";
+
+interface Zone {
+  name: string;
+  label: string;
+  description: string;
+  foes: string[];
+}
+
+interface ResourcesState {
+  gold: number;
+  essence: number;
+}
+
+interface HeroState {
+  level: number;
+  exp: number;
+  expToNext: number;
+  attack: number;
+  maxHp: number;
+  hp: number;
+  attackSpeed: number;
+  critChance: number;
+  critDamage: number;
+  regen: number;
+}
+
+type UpgradesState = Record<UpgradeKey, number>;
+type BlessingsState = Record<BlessingKey, number>;
+
+interface ProgressState {
+  zoneIndex: number;
+  highestZone: number;
+  killsTowardBoss: number;
+  totalKills: number;
+  totalBossKills: number;
+  totalDeaths: number;
+}
+
+interface SettingsState {
+  autoAdvance: boolean;
+}
+
+interface EnemyState {
+  name: string;
+  tag: "Enemy" | "Boss";
+  hp: number;
+  maxHp: number;
+  attack: number;
+  attackSpeed: number;
+  gold: number;
+  exp: number;
+  boss: boolean;
+}
+
+interface CombatState {
+  enemy: EnemyState | null;
+  heroCooldown: number;
+  enemyCooldown: number;
+  reviveTimer: number;
+  furyRemaining: number;
+  furyCooldown: number;
+}
+
+interface LogEntry {
+  text: string;
+  timestamp: string;
+}
+
+interface GameState {
+  resources: ResourcesState;
+  hero: HeroState;
+  upgrades: UpgradesState;
+  blessings: BlessingsState;
+  progress: ProgressState;
+  settings: SettingsState;
+  combat: CombatState;
+  logs: LogEntry[];
+  lastSeen: number;
+}
+
+interface SavedState {
+  resources?: Partial<ResourcesState>;
+  hero?: Partial<HeroState>;
+  upgrades?: Partial<UpgradesState>;
+  blessings?: Partial<BlessingsState>;
+  progress?: Partial<ProgressState>;
+  settings?: Partial<SettingsState>;
+  combat?: Partial<Omit<CombatState, "enemy">>;
+  logs?: LogEntry[];
+  lastSeen?: number;
+}
+
+interface UIRefs {
+  offlineBanner: HTMLElement;
+  goldValue: HTMLElement;
+  essenceValue: HTMLElement;
+  zoneValue: HTMLElement;
+  heroLevel: HTMLElement;
+  heroStatus: HTMLElement;
+  expValue: HTMLElement;
+  expBar: HTMLElement;
+  attackValue: HTMLElement;
+  hpValue: HTMLElement;
+  speedValue: HTMLElement;
+  critValue: HTMLElement;
+  regenValue: HTMLElement;
+  dpsValue: HTMLElement;
+  saveButton: HTMLButtonElement;
+  upgradeAttack: HTMLButtonElement;
+  upgradeVitality: HTMLButtonElement;
+  upgradeTempo: HTMLButtonElement;
+  upgradeFocus: HTMLButtonElement;
+  upgradeAttackCost: HTMLElement;
+  upgradeVitalityCost: HTMLElement;
+  upgradeTempoCost: HTMLElement;
+  upgradeFocusCost: HTMLElement;
+  autoAdvanceToggle: HTMLInputElement;
+  heroHpBar: HTMLElement;
+  heroHpText: HTMLElement;
+  enemyTag: HTMLElement;
+  enemyName: HTMLElement;
+  enemyHpBar: HTMLElement;
+  enemyHpText: HTMLElement;
+  enemyPower: HTMLElement;
+  furyButton: HTMLButtonElement;
+  furyCooldown: HTMLElement;
+  furyState: HTMLElement;
+  bossProgress: HTMLElement;
+  totalKills: HTMLElement;
+  totalBossKills: HTMLElement;
+  totalDeaths: HTMLElement;
+  combatLog: HTMLElement;
+  prevZoneButton: HTMLButtonElement;
+  nextZoneButton: HTMLButtonElement;
+  zoneName: HTMLElement;
+  zoneDescription: HTMLElement;
+  zoneList: HTMLElement;
+  blessingEdge: HTMLButtonElement;
+  blessingBounty: HTMLButtonElement;
+  blessingWard: HTMLButtonElement;
+  blessingEdgeCost: HTMLElement;
+  blessingBountyCost: HTMLElement;
+  blessingWardCost: HTMLElement;
+}
+
+const ZONES: ReadonlyArray<Zone> = [
   {
     name: "Cinder Trail",
     label: "잿불 길목",
@@ -39,17 +184,17 @@ const ZONES = [
   },
 ];
 
-function byId(id) {
+function byId<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
 
   if (!element) {
     throw new Error(`Missing required element: #${id}`);
   }
 
-  return element;
+  return element as T;
 }
 
-const refs = {
+const refs: UIRefs = {
   offlineBanner: byId("offlineBanner"),
   goldValue: byId("goldValue"),
   essenceValue: byId("essenceValue"),
@@ -103,11 +248,11 @@ const refs = {
 };
 
 let state = createInitialState();
-let zoneButtons = [];
+let zoneButtons: HTMLButtonElement[] = [];
 let lastFrame = 0;
 let lastSave = 0;
 
-function createInitialState() {
+function createInitialState(): GameState {
   return {
     resources: {
       gold: 0,
@@ -160,7 +305,7 @@ function createInitialState() {
   };
 }
 
-function hydrateState(saved) {
+function hydrateState(saved: SavedState | null): GameState {
   const base = createInitialState();
 
   if (!saved || typeof saved !== "object") {
@@ -186,7 +331,7 @@ function hydrateState(saved) {
   };
 }
 
-function loadState() {
+function loadState(): GameState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
 
@@ -194,28 +339,28 @@ function loadState() {
       return createInitialState();
     }
 
-    return hydrateState(JSON.parse(raw));
+    return hydrateState(JSON.parse(raw) as SavedState);
   } catch (error) {
     console.warn("Failed to load save state.", error);
     return createInitialState();
   }
 }
 
-function saveState() {
+function saveState(): void {
   state.lastSeen = Date.now();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   lastSave = state.lastSeen;
 }
 
-function clamp(value, min, max) {
+function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-function randomBetween(min, max) {
+function randomBetween(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-function formatNumber(value) {
+function formatNumber(value: number): string {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(1)}M`;
   }
@@ -227,7 +372,7 @@ function formatNumber(value) {
   return Math.floor(value).toLocaleString("ko-KR");
 }
 
-function normalizeState() {
+function normalizeState(): void {
   state.progress.highestZone = clamp(state.progress.highestZone, 0, ZONES.length - 1);
   state.progress.zoneIndex = clamp(state.progress.zoneIndex, 0, state.progress.highestZone);
   state.progress.killsTowardBoss = clamp(state.progress.killsTowardBoss, 0, BOSS_WAVE_TARGET);
@@ -235,43 +380,43 @@ function normalizeState() {
   state.hero.hp = clamp(state.hero.hp, 0, getBlessedMaxHp());
 }
 
-function getBlessedAttack() {
+function getBlessedAttack(): number {
   const furyMultiplier = state.combat.furyRemaining > 0 ? 1.9 : 1;
   return state.hero.attack * (1 + state.blessings.edge * 0.12) * furyMultiplier;
 }
 
-function getBlessedAttackSpeed() {
+function getBlessedAttackSpeed(): number {
   const furyMultiplier = state.combat.furyRemaining > 0 ? 1.55 : 1;
   return state.hero.attackSpeed * furyMultiplier;
 }
 
-function getBlessedMaxHp() {
+function getBlessedMaxHp(): number {
   return state.hero.maxHp * (1 + state.blessings.ward * 0.1);
 }
 
-function getBlessedRegen() {
+function getBlessedRegen(): number {
   return state.hero.regen * (1 + state.blessings.ward * 0.12);
 }
 
-function getGoldMultiplier() {
+function getGoldMultiplier(): number {
   return 1 + state.blessings.bounty * 0.14;
 }
 
-function getEstimatedDps() {
+function getEstimatedDps(): number {
   const base = getBlessedAttack() * getBlessedAttackSpeed();
   const critBonus = 1 + clamp(state.hero.critChance, 0, 0.65) * (state.hero.critDamage - 1);
   return base * critBonus;
 }
 
-function getUpgradeCost(key) {
-  const baseCosts = {
+function getUpgradeCost(key: UpgradeKey): number {
+  const baseCosts: Record<UpgradeKey, number> = {
     attack: 18,
     vitality: 26,
     tempo: 36,
     focus: 52,
   };
 
-  const growthRates = {
+  const growthRates: Record<UpgradeKey, number> = {
     attack: 1.48,
     vitality: 1.5,
     tempo: 1.57,
@@ -281,14 +426,14 @@ function getUpgradeCost(key) {
   return Math.floor(baseCosts[key] * Math.pow(growthRates[key], state.upgrades[key]));
 }
 
-function getBlessingCost(key) {
-  const baseCosts = {
+function getBlessingCost(key: BlessingKey): number {
+  const baseCosts: Record<BlessingKey, number> = {
     edge: 2,
     bounty: 2,
     ward: 3,
   };
 
-  const growthRates = {
+  const growthRates: Record<BlessingKey, number> = {
     edge: 1.75,
     bounty: 1.85,
     ward: 1.9,
@@ -297,7 +442,7 @@ function getBlessingCost(key) {
   return Math.max(1, Math.floor(baseCosts[key] * Math.pow(growthRates[key], state.blessings[key])));
 }
 
-function addLog(message) {
+function addLog(message: string): void {
   const timestamp = new Date().toLocaleTimeString("ko-KR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -308,7 +453,7 @@ function addLog(message) {
   state.logs = state.logs.slice(0, LOG_LIMIT);
 }
 
-function createEnemy() {
+function createEnemy(): void {
   const zone = ZONES[state.progress.zoneIndex];
   const boss = state.progress.killsTowardBoss >= BOSS_WAVE_TARGET;
   const scale = Math.pow(1.34, state.progress.zoneIndex);
@@ -335,7 +480,7 @@ function createEnemy() {
   addLog(`${name} 출현`);
 }
 
-function gainExperience(amount) {
+function gainExperience(amount: number): void {
   state.hero.exp += amount;
 
   while (state.hero.exp >= state.hero.expToNext) {
@@ -359,7 +504,7 @@ function gainExperience(amount) {
   }
 }
 
-function onEnemyDefeated() {
+function onEnemyDefeated(): void {
   const enemy = state.combat.enemy;
 
   if (!enemy) {
@@ -399,7 +544,7 @@ function onEnemyDefeated() {
   createEnemy();
 }
 
-function onHeroDefeated() {
+function onHeroDefeated(): void {
   state.progress.totalDeaths += 1;
   state.resources.gold = Math.floor(state.resources.gold * 0.92);
   state.combat.reviveTimer = 3;
@@ -408,7 +553,7 @@ function onHeroDefeated() {
   addLog("원정대가 밀려났습니다. 전열을 정비합니다.");
 }
 
-function travelToZone(zoneIndex) {
+function travelToZone(zoneIndex: number): void {
   const target = clamp(zoneIndex, 0, state.progress.highestZone);
 
   if (target === state.progress.zoneIndex) {
@@ -422,7 +567,7 @@ function travelToZone(zoneIndex) {
   createEnemy();
 }
 
-function purchaseUpgrade(key) {
+function purchaseUpgrade(key: UpgradeKey): void {
   const cost = getUpgradeCost(key);
 
   if (state.resources.gold < cost) {
@@ -456,7 +601,7 @@ function purchaseUpgrade(key) {
   }
 }
 
-function purchaseBlessing(key) {
+function purchaseBlessing(key: BlessingKey): void {
   const cost = getBlessingCost(key);
 
   if (state.resources.essence < cost) {
@@ -480,7 +625,7 @@ function purchaseBlessing(key) {
   }
 }
 
-function triggerFury() {
+function triggerFury(): void {
   if (state.combat.furyCooldown > 0 || state.combat.reviveTimer > 0) {
     return;
   }
@@ -490,7 +635,7 @@ function triggerFury() {
   addLog("광란 발동. 잠시 동안 공격 성능이 폭증합니다.");
 }
 
-function simulateOfflineProgress() {
+function simulateOfflineProgress(): void {
   const secondsAway = Math.min(Math.max(0, Math.floor((Date.now() - state.lastSeen) / 1000)), MAX_OFFLINE_SECONDS);
 
   if (secondsAway < 15) {
@@ -518,7 +663,7 @@ function simulateOfflineProgress() {
   addLog(`오프라인 보상: Gold ${formatNumber(goldGain)}, EXP ${formatNumber(expGain)}`);
 }
 
-function tick(dt) {
+function tick(dt: number): void {
   if (!state.combat.enemy) {
     createEnemy();
   }
@@ -568,13 +713,13 @@ function tick(dt) {
   }
 }
 
-function renderLog() {
+function renderLog(): void {
   refs.combatLog.innerHTML = state.logs
     .map((entry) => `<div class="log-entry"><strong>[${entry.timestamp}]</strong> ${entry.text}</div>`)
     .join("");
 }
 
-function renderZones() {
+function renderZones(): void {
   zoneButtons.forEach((button, index) => {
     const unlocked = index <= state.progress.highestZone;
 
@@ -584,7 +729,7 @@ function renderZones() {
   });
 }
 
-function render() {
+function render(): void {
   const zone = ZONES[state.progress.zoneIndex];
   const enemy = state.combat.enemy;
   const maxHp = getBlessedMaxHp();
@@ -652,7 +797,7 @@ function render() {
   renderLog();
 }
 
-function frame(timestamp) {
+function frame(timestamp: number): void {
   if (!lastFrame) {
     lastFrame = timestamp;
     lastSave = Date.now();
@@ -672,7 +817,7 @@ function frame(timestamp) {
   window.requestAnimationFrame(frame);
 }
 
-function buildZoneButtons() {
+function buildZoneButtons(): void {
   refs.zoneList.innerHTML = "";
   zoneButtons = ZONES.map((zone, index) => {
     const button = document.createElement("button");
@@ -690,7 +835,7 @@ function buildZoneButtons() {
   });
 }
 
-function bindEvents() {
+function bindEvents(): void {
   refs.saveButton.addEventListener("click", () => {
     saveState();
     addLog("수동 저장이 완료되었습니다.");
@@ -707,10 +852,10 @@ function bindEvents() {
   refs.furyButton.addEventListener("click", triggerFury);
   refs.prevZoneButton.addEventListener("click", () => travelToZone(state.progress.zoneIndex - 1));
   refs.nextZoneButton.addEventListener("click", () => travelToZone(state.progress.zoneIndex + 1));
-  refs.autoAdvanceToggle.addEventListener("change", (event) => {
-    const target = event.currentTarget;
+  refs.autoAdvanceToggle.addEventListener("change", (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement | null;
 
-    if (target instanceof HTMLInputElement) {
+    if (target) {
       state.settings.autoAdvance = target.checked;
     }
   });
@@ -718,7 +863,7 @@ function bindEvents() {
   window.addEventListener("beforeunload", saveState);
 }
 
-function init() {
+function init(): void {
   state = loadState();
   normalizeState();
   buildZoneButtons();
