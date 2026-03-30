@@ -25,6 +25,13 @@ const EQUIPMENT_SLOTS = [
   { id: "shoes", label: "신발" },
 ];
 
+const EQUIPMENT_CATEGORIES = [
+  { id: "all", label: "전체", slots: EQUIPMENT_SLOTS.map((slot) => slot.id) },
+  { id: "weapon", label: "무기", slots: ["weapon"] },
+  { id: "armor", label: "방어구", slots: ["helmet", "armor", "greaves", "gloves", "shoes"] },
+  { id: "accessory", label: "장신구", slots: ["ring", "necklace", "bracelet"] },
+];
+
 const RARITIES = [
   { id: "common", label: "일반", weight: 47, multiplier: 1, className: "rarity-common" },
   { id: "advanced", label: "고급", weight: 26, multiplier: 1.24, className: "rarity-advanced" },
@@ -557,7 +564,7 @@ function createInitialState() {
     equipment: { nextId: 1, inventory: [], equipped: createEquippedState() },
     gacha: { pity: 0, totalDraws: 0, recentResults: [] },
     forge: { totalSynths: 0, totalCreations: 0 },
-    settings: { autoAdvance: true, autoAdvanceWorld: true, activeMenu: "upgrades" },
+    settings: { autoAdvance: true, autoAdvanceWorld: true, activeMenu: "upgrades", equipmentFilter: "all" },
     combat: {
       enemy: null,
       heroCooldown: 0,
@@ -1519,6 +1526,9 @@ function normalizeState() {
   state.settings.activeMenu = ["upgrades", "equipment", "inventory", "synthesis", "relics", "dungeons", "status", "log"].includes(state.settings.activeMenu)
     ? state.settings.activeMenu
     : "upgrades";
+  state.settings.equipmentFilter = EQUIPMENT_CATEGORIES.some((category) => category.id === state.settings.equipmentFilter)
+    ? state.settings.equipmentFilter
+    : "all";
 
   EQUIPMENT_SLOTS.forEach((slot) => {
     state.equipment.equipped[slot.id] = normalizeItem(state.equipment.equipped?.[slot.id]);
@@ -1629,36 +1639,100 @@ function getUpgradeNextEffectText(key, level) {
   return "다음 레벨: 치명타 +0.8%, 치명타 피해 +5%";
 }
 function renderEquipmentSlots() {
-  refs.equipmentSlots.innerHTML = EQUIPMENT_SLOTS.map((slot) => {
-    const item = state.equipment.equipped[slot.id];
-    if (!item) {
-      return `
-        <div class="equipment-card">
-          <div class="slot-title">
-            <strong>${slot.label}</strong>
-            <em>비어 있음</em>
-          </div>
-          <span>장비 뽑기나 합성으로 ${slot.label} 장비를 획득하세요.</span>
-        </div>
-      `;
-    }
+  const filter = EQUIPMENT_CATEGORIES.find((category) => category.id === state.settings.equipmentFilter) || EQUIPMENT_CATEGORIES[0];
+  const previewItems = [...state.equipment.inventory]
+    .filter((item) => filter.slots.includes(item.slot))
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 12);
 
-    return `
-      <div class="equipment-card ${item.className}">
-        <div class="slot-title">
-          <strong>${slot.label}</strong>
-          <em class="rarity-label">${item.rarityLabel}</em>
+  refs.equipmentSlots.innerHTML = `
+    <div class="equipment-layout">
+      <section class="loadout-board">
+        <div class="loadout-stage">
+          <div class="loadout-avatar">
+            <div class="avatar-plate">
+              <div class="avatar-figure">
+                <span>ADVENTURER</span>
+              </div>
+              <div class="avatar-caption">
+                <strong>원정대 장비창</strong>
+                <span>이미지 자리는 나중에 캐릭터 일러스트로 교체 가능합니다.</span>
+              </div>
+            </div>
+            <div class="loadout-slots">
+              ${EQUIPMENT_SLOTS.map((slot) => {
+                const item = state.equipment.equipped[slot.id];
+                return `
+                  <div class="loadout-slot ${item ? item.className : ""}">
+                    <div class="slot-label-row">
+                      <strong>${slot.label}</strong>
+                      <em>${item ? item.rarityLabel : "빈 슬롯"}</em>
+                    </div>
+                    <div class="slot-icon-box">${item ? slot.label.slice(0, 1) : "+"}</div>
+                    <span class="slot-item-name">${item ? item.name : `${slot.label} 장비 없음`}</span>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
         </div>
-        <span>${item.name}</span>
-        <div class="equipment-bonuses">
-          ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
+      </section>
+
+      <section class="equipment-arsenal">
+        <div class="equipment-tabbar">
+          ${EQUIPMENT_CATEGORIES.map((category) => `
+            <button
+              type="button"
+              class="equipment-filter-tab ${category.id === filter.id ? "is-active" : ""}"
+              data-equip-tab="${category.id}"
+            >
+              ${category.label}
+            </button>
+          `).join("")}
         </div>
-        <div class="slot-footer">
-          <span class="source-tag ${item.isCreation ? "creation-tag" : ""}">${item.source}</span>
+
+        <div class="equipment-preview-grid">
+          ${previewItems.length
+            ? previewItems.map((item) => {
+                const equipped = state.equipment.equipped[item.slot]?.id === item.id;
+                return `
+                  <div class="equipment-preview-card ${item.className}">
+                    <div class="equipment-preview-head">
+                      <strong>${item.name}</strong>
+                      <em class="rarity-label">${item.rarityLabel}</em>
+                    </div>
+                    <div class="equipment-preview-icon">${getSlotLabel(item.slot)}</div>
+                    <span>${getSlotLabel(item.slot)} · 점수 ${formatNumber(item.score)}</span>
+                    <div class="equipment-bonuses">
+                      ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
+                    </div>
+                    <div class="equipment-preview-foot">
+                      <span class="source-tag ${item.isCreation ? "creation-tag" : ""}">${item.source}</span>
+                      <button type="button" class="inventory-equip" data-equip="${item.id}" ${equipped ? "disabled" : ""}>
+                        ${equipped ? "장착 중" : "장착"}
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join("")
+            : `
+              <div class="equipment-preview-empty">
+                <strong>${filter.label} 장비가 아직 없습니다.</strong>
+                <span>뽑기나 합성으로 장비를 모으면 이 영역에 표시됩니다.</span>
+                <div class="equipment-preview-placeholder-grid">
+                  ${Array.from({ length: 9 }, (_, index) => `
+                    <div class="equipment-placeholder-cell">
+                      <span>EMPTY</span>
+                      <strong>#${index + 1}</strong>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            `}
         </div>
-      </div>
-    `;
-  }).join("");
+      </section>
+    </div>
+  `;
 }
 
 function renderUpgradeList() {
@@ -1669,7 +1743,7 @@ function renderUpgradeList() {
     const affordable = state.resources.gold >= cost;
 
     return `
-      <div class="action-card upgrade-card">
+      <div class="action-card upgrade-card ${affordable ? "is-clickable" : "is-disabled"}" data-upgrade-card="${key}">
         <div class="action-title">
           <div>
             <strong>${def.label} Lv.${level}</strong>
@@ -1683,7 +1757,7 @@ function renderUpgradeList() {
         </div>
         <div class="action-footer">
           <span class="action-price ${affordable ? "" : "is-blocked"}">보유 Gold ${formatNumber(state.resources.gold)}</span>
-          <button class="action-button" data-upgrade="${key}" ${affordable ? "" : "disabled"}>강화</button>
+          <button type="button" class="action-button" data-upgrade="${key}" ${affordable ? "" : "disabled"}>강화</button>
         </div>
       </div>
     `;
@@ -1713,7 +1787,7 @@ function renderBlessingList() {
     }
 
     return `
-      <div class="action-card blessing">
+      <div class="action-card blessing ${affordable ? "is-clickable" : "is-disabled"}" data-blessing-card="${key}">
         <div class="action-title">
           <div>
             <strong>${def.label} Lv.${level}</strong>
@@ -1727,7 +1801,7 @@ function renderBlessingList() {
         </div>
         <div class="action-footer">
           <span class="action-price ${affordable ? "" : "is-blocked"}">보유 Essence ${formatNumber(state.resources.essence)}</span>
-          <button class="action-button" data-blessing="${key}" ${affordable ? "" : "disabled"}>축복</button>
+          <button type="button" class="action-button" data-blessing="${key}" ${affordable ? "" : "disabled"}>축복</button>
         </div>
       </div>
     `;
@@ -2140,16 +2214,30 @@ function bindEvents() {
   });
 
   refs.upgradeList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-upgrade]");
+    const button = getActionButton(event, "[data-upgrade], [data-upgrade-card]");
     if (!button) return;
-    purchaseUpgrade(button.dataset.upgrade);
+    purchaseUpgrade(button.dataset.upgrade || button.dataset.upgradeCard);
     render();
   });
 
   refs.blessingList.addEventListener("click", (event) => {
-    const button = getActionButton(event, "[data-blessing]");
+    const button = getActionButton(event, "[data-blessing], [data-blessing-card]");
     if (!button) return;
-    purchaseBlessing(button.dataset.blessing);
+    purchaseBlessing(button.dataset.blessing || button.dataset.blessingCard);
+    render();
+  });
+
+  refs.equipmentSlots.addEventListener("click", (event) => {
+    const filterButton = getActionButton(event, "[data-equip-tab]");
+    if (filterButton) {
+      state.settings.equipmentFilter = filterButton.dataset.equipTab;
+      render();
+      return;
+    }
+
+    const equipButton = getActionButton(event, "[data-equip]");
+    if (!equipButton) return;
+    equipItemById(Number(equipButton.dataset.equip));
     render();
   });
 
