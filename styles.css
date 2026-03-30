@@ -471,7 +471,9 @@ input {
 .action-button,
 .synthesis-button,
 .menu-tab,
-.equipment-filter-tab {
+.equipment-filter-tab,
+.gacha-category-tab,
+.info-icon-button {
   border: 0;
   cursor: pointer;
   touch-action: manipulation;
@@ -495,7 +497,9 @@ input {
 .inventory-equip:hover,
 .action-button:hover,
 .synthesis-button:hover,
-.equipment-filter-tab:hover {
+.equipment-filter-tab:hover,
+.gacha-category-tab:hover,
+.info-icon-button:hover {
   transform: translateY(-1px);
 }
 
@@ -627,10 +631,16 @@ input {
   background: var(--campaign);
 }
 
-.battle-summary,
-.gacha-meta {
+.battle-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.gacha-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 18px;
 }
@@ -684,6 +694,123 @@ input {
 .gacha-actions {
   display: flex;
   gap: 8px;
+}
+
+.gacha-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.gacha-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gacha-category-tab {
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gacha-category-tab.is-active {
+  color: var(--text-main);
+  background: linear-gradient(145deg, rgba(110, 217, 255, 0.16), rgba(255, 255, 255, 0.04));
+  border-color: rgba(110, 217, 255, 0.24);
+}
+
+.info-icon-button {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--diamond);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(110, 217, 255, 0.22);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.rate-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 7, 12, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.rate-modal[hidden] {
+  display: none;
+}
+
+.rate-sheet {
+  width: min(720px, 100%);
+  max-height: min(82vh, 880px);
+  overflow: auto;
+  padding: 22px;
+  border-radius: var(--radius-xl);
+  background: var(--panel-strong);
+  border: 1px solid rgba(255, 226, 179, 0.16);
+  box-shadow: var(--shadow);
+}
+
+.rate-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.rate-sheet-body,
+.rate-note-list,
+.rate-list {
+  display: grid;
+  gap: 10px;
+}
+
+.rate-section + .rate-section,
+.rate-section + .rate-note-list {
+  margin-top: 16px;
+}
+
+.rate-section-title {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-soft);
+}
+
+.rate-row,
+.rate-slot-card,
+.rate-note {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rate-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.rate-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rate-slot-card span,
+.rate-note {
+  color: var(--text-soft);
 }
 
 .diamond-button {
@@ -1159,7 +1286,8 @@ input {
   .menu-columns,
   .stat-grid,
   .equipment-preview-grid,
-  .equipment-preview-placeholder-grid {
+  .equipment-preview-placeholder-grid,
+  .rate-slot-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1210,9 +1338,14 @@ input {
   .inventory-toolbar,
   .dungeon-toolbar,
   .gacha-actions,
+  .gacha-category-tabs,
   .menu-tabs,
   .loadout-avatar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .rate-slot-grid {
+    grid-template-columns: 1fr;
   }
 }

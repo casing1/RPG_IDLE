@@ -32,6 +32,12 @@ const EQUIPMENT_CATEGORIES = [
   { id: "accessory", label: "장신구", slots: ["ring", "necklace", "bracelet"] },
 ];
 
+const DRAW_CATEGORIES = [
+  { id: "weapon", label: "무기", slots: ["weapon"] },
+  { id: "armor", label: "방어구", slots: ["helmet", "armor", "greaves", "gloves", "shoes"] },
+  { id: "accessory", label: "장신구", slots: ["ring", "necklace", "bracelet"] },
+];
+
 const RARITIES = [
   { id: "common", label: "일반", weight: 47, multiplier: 1, className: "rarity-common" },
   { id: "advanced", label: "고급", weight: 26, multiplier: 1.24, className: "rarity-advanced" },
@@ -364,10 +370,22 @@ const UPGRADE_DEFS = {
     costGrowth: 1.52,
   },
   vitality: {
-    label: "생존 훈련",
-    description: "최대 체력과 재생을 함께 올려 장기전을 버티게 만듭니다.",
+    label: "생존 체계",
+    description: "최대 체력을 키워 오래 버티는 기본 전선을 만듭니다.",
     costBase: 30,
     costGrowth: 1.56,
+  },
+  recovery: {
+    label: "회복 호흡",
+    description: "초당 체력 회복량을 올려 방치 생존력을 끌어올립니다.",
+    costBase: 34,
+    costGrowth: 1.58,
+  },
+  guard: {
+    label: "방패 숙련",
+    description: "방어력을 올려 받는 피해를 줄이고 안정적으로 밀어냅니다.",
+    costBase: 40,
+    costGrowth: 1.6,
   },
   tempo: {
     label: "가속 훈련",
@@ -448,6 +466,7 @@ const refs = {
   expValue: byId("expValue"),
   expBar: byId("expBar"),
   attackValue: byId("attackValue"),
+  defenseValue: byId("defenseValue"),
   hpValue: byId("hpValue"),
   speedValue: byId("speedValue"),
   critValue: byId("critValue"),
@@ -490,6 +509,12 @@ const refs = {
   statusList: byId("statusList"),
   drawOneButton: byId("drawOneButton"),
   drawTenButton: byId("drawTenButton"),
+  drawCategoryTabs: byId("drawCategoryTabs"),
+  rateInfoButton: byId("rateInfoButton"),
+  rateModal: byId("rateModal"),
+  rateModalTitle: byId("rateModalTitle"),
+  rateModalBody: byId("rateModalBody"),
+  rateModalClose: byId("rateModalClose"),
   diamondMetaValue: byId("diamondMetaValue"),
   drawPityValue: byId("drawPityValue"),
   recentDraws: byId("recentDraws"),
@@ -501,10 +526,12 @@ const refs = {
 let state = createInitialState();
 let lastFrame = 0;
 let lastSave = 0;
+let rateModalOpen = false;
 
 function createEmptyBonuses() {
   return {
     attack: 0,
+    defense: 0,
     maxHp: 0,
     attackSpeed: 0,
     critChance: 0,
@@ -541,6 +568,7 @@ function createInitialState() {
       exp: 0,
       expToNext: 24,
       attack: 14,
+      defense: 8,
       maxHp: 130,
       hp: 130,
       attackSpeed: 1.1,
@@ -548,7 +576,7 @@ function createInitialState() {
       critDamage: 1.7,
       regen: 2.6,
     },
-    upgrades: { attack: 0, vitality: 0, tempo: 0, focus: 0 },
+    upgrades: { attack: 0, vitality: 0, recovery: 0, guard: 0, tempo: 0, focus: 0 },
     blessings: { edge: 0, bounty: 0, ward: 0 },
     progress: {
       world: 1,
@@ -564,7 +592,7 @@ function createInitialState() {
     equipment: { nextId: 1, inventory: [], equipped: createEquippedState() },
     gacha: { pity: 0, totalDraws: 0, recentResults: [] },
     forge: { totalSynths: 0, totalCreations: 0 },
-    settings: { autoAdvance: true, autoAdvanceWorld: true, activeMenu: "upgrades", equipmentFilter: "all" },
+    settings: { autoAdvance: true, autoAdvanceWorld: true, activeMenu: "upgrades", equipmentFilter: "all", drawCategory: "weapon" },
     combat: {
       enemy: null,
       heroCooldown: 0,
@@ -612,6 +640,10 @@ function getSlotLabel(id) {
   return getSlotById(id).label;
 }
 
+function getDrawCategory(id) {
+  return DRAW_CATEGORIES.find((category) => category.id === id) || DRAW_CATEGORIES[0];
+}
+
 function getRarityData(id, isCreation) {
   if (isCreation || id === CREATION_RARITY.id) return CREATION_RARITY;
   return RARITIES.find((rarity) => rarity.id === id) || RARITIES[0];
@@ -632,6 +664,7 @@ function getNextRarity(id) {
 function cloneBonuses(bonuses) {
   return {
     attack: Number(bonuses?.attack || 0),
+    defense: Number(bonuses?.defense || 0),
     maxHp: Number(bonuses?.maxHp || 0),
     attackSpeed: Number(bonuses?.attackSpeed || 0),
     critChance: Number(bonuses?.critChance || 0),
@@ -648,6 +681,7 @@ function calculateItemScore(item) {
   const bonus = item.bonuses;
   return (
     bonus.attack * 1.3 +
+    bonus.defense * 7.5 +
     bonus.maxHp * 0.22 +
     bonus.attackSpeed * 240 +
     bonus.critChance * 950 +
@@ -856,11 +890,12 @@ function getBlessingCost(key) {
 function getUpgradeBonuses() {
   return {
     attack: state.upgrades.attack * 10,
-    maxHp: state.upgrades.vitality * 45,
+    defense: state.upgrades.guard * 4,
+    maxHp: state.upgrades.vitality * 55,
     attackSpeed: state.upgrades.tempo * 0.06,
     critChance: state.upgrades.focus * 0.008,
     critDamage: state.upgrades.focus * 0.05,
-    regen: state.upgrades.vitality * 0.25,
+    regen: state.upgrades.recovery * 0.38,
     goldRate: 0,
     diamondRate: 0,
     bossDamage: Math.floor(state.upgrades.attack / 10) * 0.03,
@@ -902,6 +937,7 @@ function getFinalStats() {
   const furySpeed = state.combat.furyRemaining > 0 ? 1.45 : 1;
 
   const attack = (state.hero.attack + upgrade.attack + gear.attack + relic.attack) * (1 + state.blessings.edge * 0.08) * furyAttack;
+  const defense = state.hero.defense + upgrade.defense + gear.defense + relic.defense;
   const maxHp = (state.hero.maxHp + upgrade.maxHp + gear.maxHp + relic.maxHp) * (1 + state.blessings.ward * 0.08);
   const attackSpeed = (state.hero.attackSpeed + upgrade.attackSpeed + gear.attackSpeed + relic.attackSpeed) * furySpeed;
   const critChance = clamp(state.hero.critChance + upgrade.critChance + gear.critChance + relic.critChance, 0, 0.85);
@@ -911,10 +947,12 @@ function getFinalStats() {
   const diamondRate = 1 + state.blessings.bounty * 0.04 + gear.diamondRate + relic.diamondRate;
   const bossDamage = 1 + Math.floor(state.upgrades.attack / 10) * 0.03 + state.blessings.edge * 0.02 + gear.bossDamage + relic.bossDamage;
   const dungeonDamage = 1 + Math.floor(state.upgrades.vitality / 12) * 0.04 + gear.dungeonDamage + relic.dungeonDamage;
+  const damageReduction = clamp(defense / (defense + 160), 0, 0.78);
   const dps = attack * attackSpeed * (1 + critChance * (critDamage - 1));
 
   return {
     attack,
+    defense,
     maxHp,
     attackSpeed,
     critChance,
@@ -924,9 +962,11 @@ function getFinalStats() {
     diamondRate,
     bossDamage,
     dungeonDamage,
+    damageReduction,
     dps,
     base: {
       attack: state.hero.attack,
+      defense: state.hero.defense,
       maxHp: state.hero.maxHp,
       attackSpeed: state.hero.attackSpeed,
       critChance: state.hero.critChance,
@@ -1054,6 +1094,7 @@ function gainExperience(amount) {
     state.hero.level += 1;
     state.hero.expToNext = Math.round(state.hero.expToNext * 1.26 + 12);
     state.hero.attack += 3 + Math.floor(state.hero.level * 0.48);
+    state.hero.defense += 1.2;
     state.hero.maxHp += 18 + state.hero.level * 2.2;
     state.hero.regen += 0.22;
     if (state.hero.level % 4 === 0) state.hero.attackSpeed += 0.025;
@@ -1097,6 +1138,9 @@ function getAffixPool(scale, multiplier) {
       bonuses.attack += Math.round(scale * 2.2 * multiplier);
     },
     (bonuses) => {
+      bonuses.defense += Math.round(scale * 1.4 * multiplier);
+    },
+    (bonuses) => {
       bonuses.maxHp += Math.round(scale * 12 * multiplier);
     },
     (bonuses) => {
@@ -1128,11 +1172,13 @@ function getAffixPool(scale, multiplier) {
 
 function applySlotBaseBonuses(slot, bonuses, scale, multiplier) {
   if (slot === "helmet") {
+    bonuses.defense += Math.round(scale * 3.2 * multiplier);
     bonuses.maxHp += Math.round(scale * 24 * multiplier);
     bonuses.regen += 0.42 * multiplier;
     bonuses.bossDamage += 0.012 * multiplier;
   }
   if (slot === "armor") {
+    bonuses.defense += Math.round(scale * 7.4 * multiplier);
     bonuses.maxHp += Math.round(scale * 42 * multiplier);
     bonuses.regen += 0.58 * multiplier;
     bonuses.dungeonDamage += 0.018 * multiplier;
@@ -1158,16 +1204,19 @@ function applySlotBaseBonuses(slot, bonuses, scale, multiplier) {
     bonuses.bossDamage += 0.02 * multiplier;
   }
   if (slot === "greaves") {
+    bonuses.defense += Math.round(scale * 4.2 * multiplier);
     bonuses.maxHp += Math.round(scale * 18 * multiplier);
     bonuses.attackSpeed += 0.018 * multiplier;
     bonuses.dungeonDamage += 0.022 * multiplier;
   }
   if (slot === "gloves") {
+    bonuses.defense += Math.round(scale * 2.8 * multiplier);
     bonuses.attack += Math.round(scale * 4.5 * multiplier);
     bonuses.attackSpeed += 0.024 * multiplier;
     bonuses.critChance += 0.004 * multiplier;
   }
   if (slot === "shoes") {
+    bonuses.defense += Math.round(scale * 2.4 * multiplier);
     bonuses.regen += 0.36 * multiplier;
     bonuses.attackSpeed += 0.016 * multiplier;
     bonuses.goldRate += 0.026 * multiplier;
@@ -1255,6 +1304,7 @@ function addItemToInventory(item, options = {}) {
 }
 
 function drawEquipment(count, options = {}) {
+  const category = options.categoryId ? getDrawCategory(options.categoryId) : null;
   if (!options.free) {
     const cost = count === 10 ? DRAW_COST_MULTI : DRAW_COST_SINGLE;
     if (state.resources.diamonds < cost) return [];
@@ -1263,7 +1313,10 @@ function drawEquipment(count, options = {}) {
 
   const results = [];
   for (let index = 0; index < count; index += 1) {
-    const item = createEquipmentItem(options);
+    const item = createEquipmentItem({
+      ...options,
+      slot: options.slot || (category ? choose(category.slots) : undefined),
+    });
     addItemToInventory(item);
     results.push(item);
   }
@@ -1529,6 +1582,9 @@ function normalizeState() {
   state.settings.equipmentFilter = EQUIPMENT_CATEGORIES.some((category) => category.id === state.settings.equipmentFilter)
     ? state.settings.equipmentFilter
     : "all";
+  state.settings.drawCategory = DRAW_CATEGORIES.some((category) => category.id === state.settings.drawCategory)
+    ? state.settings.drawCategory
+    : "weapon";
 
   EQUIPMENT_SLOTS.forEach((slot) => {
     state.equipment.equipped[slot.id] = normalizeItem(state.equipment.equipped?.[slot.id]);
@@ -1556,6 +1612,15 @@ function getDamageAgainstEnemy(stats, enemy, isCrit) {
   if (enemy.boss) damage *= stats.bossDamage;
   if (enemy.dungeon) damage *= stats.dungeonDamage;
   return damage;
+}
+
+function getDamageAgainstHero(stats, enemy) {
+  const rawDamage = enemy.attack * randomBetween(0.9, 1.1);
+  return Math.max(1, rawDamage * (1 - stats.damageReduction));
+}
+
+function getEnemyHitPreview(stats, enemy) {
+  return Math.max(1, enemy.attack * (1 - stats.damageReduction));
 }
 
 function tick(dt) {
@@ -1593,7 +1658,7 @@ function tick(dt) {
   }
 
   while (state.combat.enemyCooldown <= 0 && state.combat.enemy && state.combat.enemy.hp > 0) {
-    const damage = state.combat.enemy.attack * randomBetween(0.9, 1.1);
+    const damage = getDamageAgainstHero(stats, state.combat.enemy);
     state.hero.hp = Math.max(0, state.hero.hp - damage);
     state.combat.enemyCooldown += 1 / Math.max(state.combat.enemy.attackSpeed, 0.1);
 
@@ -1607,6 +1672,7 @@ function tick(dt) {
 function formatBonusChips(bonuses) {
   const chips = [];
   if (bonuses.attack) chips.push(`ATK +${formatNumber(bonuses.attack)}`);
+  if (bonuses.defense) chips.push(`DEF +${formatNumber(bonuses.defense)}`);
   if (bonuses.maxHp) chips.push(`HP +${formatNumber(bonuses.maxHp)}`);
   if (bonuses.attackSpeed) chips.push(`SPD +${bonuses.attackSpeed.toFixed(2)}`);
   if (bonuses.critChance) chips.push(`CRT +${formatPercent(bonuses.critChance)}`);
@@ -1621,7 +1687,9 @@ function formatBonusChips(bonuses) {
 
 function getUpgradeCurrentEffectText(key, level) {
   if (key === "attack") return `공격력 +${level * 10}, 보스 피해 +${Math.floor(level / 10) * 3}%`;
-  if (key === "vitality") return `최대 체력 +${level * 45}, 재생 +${(level * 0.25).toFixed(1)}, 던전 피해 +${Math.floor(level / 12) * 4}%`;
+  if (key === "vitality") return `최대 체력 +${level * 55}, 던전 피해 +${Math.floor(level / 12) * 4}%`;
+  if (key === "recovery") return `초당 회복 +${(level * 0.38).toFixed(1)}`;
+  if (key === "guard") return `방어력 +${level * 4}, 피해 경감 ${formatPercent(clamp((level * 4) / (level * 4 + 160), 0, 0.78))}`;
   if (key === "tempo") return `공격 속도 +${(level * 0.06).toFixed(2)}/s`;
   return `치명타 +${(level * 0.8).toFixed(1)}%, 치명타 피해 +${Math.round(level * 5)}%`;
 }
@@ -1633,10 +1701,61 @@ function getUpgradeNextEffectText(key, level) {
   }
   if (key === "vitality") {
     const nextDungeon = Math.floor((level + 1) / 12) > Math.floor(level / 12) ? ", 던전 피해 +4%" : "";
-    return `다음 레벨: 최대 체력 +45, 재생 +0.25${nextDungeon}`;
+    return `다음 레벨: 최대 체력 +55${nextDungeon}`;
   }
+  if (key === "recovery") return "다음 레벨: 초당 회복 +0.38";
+  if (key === "guard") return "다음 레벨: 방어력 +4";
   if (key === "tempo") return "다음 레벨: 공격 속도 +0.06/s";
   return "다음 레벨: 치명타 +0.8%, 치명타 피해 +5%";
+}
+
+function getDrawRateRows() {
+  const totalWeight = RARITIES.reduce((sum, rarity) => sum + rarity.weight, 0);
+  return RARITIES.map((rarity) => ({
+    ...rarity,
+    rate: (rarity.weight / totalWeight) * 100,
+  }));
+}
+
+function renderDrawInfoPanel() {
+  const category = getDrawCategory(state.settings.drawCategory);
+  refs.drawCategoryTabs.querySelectorAll("[data-draw-category]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.drawCategory === category.id);
+  });
+
+  const slotRate = 100 / category.slots.length;
+  refs.rateInfoButton.setAttribute("aria-expanded", String(rateModalOpen));
+  refs.rateModal.hidden = !rateModalOpen;
+
+  refs.rateModalTitle.textContent = `${category.label} 뽑기 확률표`;
+  refs.rateModalBody.innerHTML = `
+    <div class="rate-section">
+      <div class="rate-list">
+        ${getDrawRateRows().map((rarity) => `
+          <div class="rate-row ${rarity.className}">
+            <span>${rarity.label}</span>
+            <strong>${rarity.rate.toFixed(rarity.rate < 1 ? 1 : 0)}%</strong>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+    <div class="rate-section">
+      <strong class="rate-section-title">현재 카테고리 부위 분배</strong>
+      <div class="rate-slot-grid">
+        ${category.slots.map((slot) => `
+          <div class="rate-slot-card">
+            <span>${getSlotLabel(slot)}</span>
+            <strong>${slotRate.toFixed(slotRate % 1 ? 1 : 0)}%</strong>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+    <div class="rate-note-list">
+      <div class="rate-note">30회째 일반 뽑기에서는 전설 이상이 확정됩니다.</div>
+      <div class="rate-note">창조 등급은 뽑기에서 등장하지 않고 유일 장비 3개 합성으로만 제작됩니다.</div>
+      <div class="rate-note">${category.label} 뽑기에서는 해당 카테고리 부위만 균등하게 등장합니다.</div>
+    </div>
+  `;
 }
 function renderEquipmentSlots() {
   const filter = EQUIPMENT_CATEGORIES.find((category) => category.id === state.settings.equipmentFilter) || EQUIPMENT_CATEGORIES[0];
@@ -1818,29 +1937,39 @@ function renderStatusList(stats) {
       detail: `기본 ${formatNumber(stats.base.attack)} / 업그레이드 +${formatNumber(stats.upgrade.attack)} / 장비 +${formatNumber(stats.gear.attack)}`,
     },
     {
+      label: "방어력",
+      value: formatNumber(stats.defense),
+      detail: `기본 ${formatNumber(stats.base.defense)} / 업그레이드 +${formatNumber(stats.upgrade.defense)} / 장비 +${formatNumber(stats.gear.defense)}`,
+    },
+    {
       label: "최대 체력",
       value: formatNumber(stats.maxHp),
-      detail: `기본 ${formatNumber(stats.base.maxHp)} / 장비 +${formatNumber(stats.gear.maxHp)}`,
+      detail: `기본 ${formatNumber(stats.base.maxHp)} / 업그레이드 +${formatNumber(stats.upgrade.maxHp)} / 장비 +${formatNumber(stats.gear.maxHp)}`,
     },
     {
       label: "공격 속도",
       value: `${stats.attackSpeed.toFixed(2)}/s`,
-      detail: `기본 ${stats.base.attackSpeed.toFixed(2)} / 장비 +${stats.gear.attackSpeed.toFixed(2)}`,
+      detail: `기본 ${stats.base.attackSpeed.toFixed(2)} / 업그레이드 +${stats.upgrade.attackSpeed.toFixed(2)} / 장비 +${stats.gear.attackSpeed.toFixed(2)}`,
     },
     {
       label: "치명타 확률",
       value: formatPercent(stats.critChance),
-      detail: `기본 ${formatPercent(stats.base.critChance)} / 장비 +${formatPercent(stats.gear.critChance)}`,
+      detail: `기본 ${formatPercent(stats.base.critChance)} / 업그레이드 +${formatPercent(stats.upgrade.critChance)} / 장비 +${formatPercent(stats.gear.critChance)}`,
     },
     {
       label: "치명타 피해",
       value: formatPercent(stats.critDamage - 1),
-      detail: `최종 배율 ${stats.critDamage.toFixed(2)}x`,
+      detail: `업그레이드 +${formatPercent(stats.upgrade.critDamage)} / 장비 +${formatPercent(stats.gear.critDamage)} / 최종 ${stats.critDamage.toFixed(2)}x`,
     },
     {
-      label: "재생",
+      label: "체력 회복",
       value: `${stats.regen.toFixed(1)}/s`,
-      detail: `기본 ${stats.base.regen.toFixed(1)} / 장비 +${stats.gear.regen.toFixed(1)}`,
+      detail: `기본 ${stats.base.regen.toFixed(1)} / 업그레이드 +${stats.upgrade.regen.toFixed(1)} / 장비 +${stats.gear.regen.toFixed(1)}`,
+    },
+    {
+      label: "피해 경감",
+      value: formatPercent(stats.damageReduction),
+      detail: "방어력 기반으로 적의 공격 피해를 줄입니다.",
     },
     {
       label: "Gold 획득",
@@ -2129,6 +2258,7 @@ function render() {
   refs.expValue.textContent = `${formatNumber(state.hero.exp)} / ${formatNumber(state.hero.expToNext)}`;
   refs.expBar.style.width = `${expRatio * 100}%`;
   refs.attackValue.textContent = formatNumber(stats.attack);
+  refs.defenseValue.textContent = formatNumber(stats.defense);
   refs.hpValue.textContent = `${formatNumber(state.hero.hp)} / ${formatNumber(stats.maxHp)}`;
   refs.speedValue.textContent = `${stats.attackSpeed.toFixed(2)}/s`;
   refs.critValue.textContent = formatPercent(stats.critChance);
@@ -2141,7 +2271,7 @@ function render() {
   refs.enemyName.textContent = enemy ? enemy.name : "적 탐색 중";
   refs.enemyTag.textContent = enemy ? enemy.tag : "Enemy";
   refs.enemyHpText.textContent = enemy ? `${formatNumber(enemy.hp)} / ${formatNumber(enemy.maxHp)}` : "-";
-  refs.enemyPower.textContent = enemy ? `ATK ${formatNumber(enemy.attack)}` : "-";
+  refs.enemyPower.textContent = enemy ? `ATK ${formatNumber(enemy.attack)} · 예상 ${formatNumber(getEnemyHitPreview(stats, enemy))}` : "-";
   refs.enemyHpBar.style.width = `${enemyHpRatio * 100}%`;
 
   refs.furyState.textContent = state.combat.furyRemaining > 0 ? `${state.combat.furyRemaining.toFixed(1)}초 남음` : "광란 대기";
@@ -2173,11 +2303,13 @@ function render() {
 
   refs.diamondMetaValue.textContent = formatNumber(state.resources.diamonds);
   refs.drawPityValue.textContent = `${state.gacha.pity} / 30`;
-  refs.drawOneButton.textContent = `1회 뽑기 (${DRAW_COST_SINGLE})`;
-  refs.drawTenButton.textContent = `10회 뽑기 (${DRAW_COST_MULTI})`;
+  const drawCategory = getDrawCategory(state.settings.drawCategory);
+  refs.drawOneButton.textContent = `1회 ${drawCategory.label} 뽑기 (${DRAW_COST_SINGLE})`;
+  refs.drawTenButton.textContent = `10회 ${drawCategory.label} 뽑기 (${DRAW_COST_MULTI})`;
   refs.drawOneButton.disabled = state.resources.diamonds < DRAW_COST_SINGLE;
   refs.drawTenButton.disabled = state.resources.diamonds < DRAW_COST_MULTI;
 
+  renderDrawInfoPanel();
   renderEquipmentSlots();
   renderUpgradeList();
   renderBlessingList();
@@ -2217,11 +2349,37 @@ function bindEvents() {
   refs.furyButton.addEventListener("click", triggerFury);
   refs.leaveDungeonButton.addEventListener("click", leaveDungeon);
   refs.drawOneButton.addEventListener("click", () => {
-    drawEquipment(1);
+    const category = getDrawCategory(state.settings.drawCategory);
+    drawEquipment(1, { categoryId: category.id, source: `${category.label} 뽑기` });
     render();
   });
   refs.drawTenButton.addEventListener("click", () => {
-    drawEquipment(10);
+    const category = getDrawCategory(state.settings.drawCategory);
+    drawEquipment(10, { categoryId: category.id, source: `${category.label} 10회 뽑기` });
+    render();
+  });
+  refs.drawCategoryTabs.addEventListener("click", (event) => {
+    const button = getActionButton(event, "[data-draw-category]");
+    if (!button) return;
+    state.settings.drawCategory = button.dataset.drawCategory;
+    render();
+  });
+  refs.rateInfoButton.addEventListener("click", () => {
+    rateModalOpen = true;
+    render();
+  });
+  refs.rateModalClose.addEventListener("click", () => {
+    rateModalOpen = false;
+    render();
+  });
+  refs.rateModal.addEventListener("click", (event) => {
+    if (event.target !== refs.rateModal) return;
+    rateModalOpen = false;
+    render();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !rateModalOpen) return;
+    rateModalOpen = false;
     render();
   });
 
@@ -2235,6 +2393,7 @@ function bindEvents() {
   refs.menuTabs.addEventListener("click", (event) => {
     const button = getActionButton(event, "[data-menu]");
     if (!button) return;
+    rateModalOpen = false;
     state.settings.activeMenu = button.dataset.menu;
     render();
   });
