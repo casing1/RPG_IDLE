@@ -200,7 +200,7 @@ h3 {
 
 .dashboard {
   display: grid;
-  grid-template-columns: 1.02fr 1.18fr 1fr;
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 18px;
   margin-top: 18px;
 }
@@ -215,27 +215,10 @@ h3 {
 
 .battle-panel {
   grid-column: 2;
-  grid-row: span 2;
 }
 
-.systems-panel {
-  grid-column: 3;
-}
-
-.upgrade-panel {
-  grid-column: 1;
-}
-
-.status-panel {
-  grid-column: 3;
-}
-
-.gacha-panel {
-  grid-column: 1 / span 2;
-}
-
-.log-panel {
-  grid-column: 3;
+.management-panel {
+  grid-column: 1 / -1;
 }
 
 .section-heading,
@@ -257,6 +240,54 @@ h3 {
 
 .subsection {
   margin-top: 18px;
+}
+
+.menu-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.menu-tab {
+  padding: 10px 14px;
+  color: var(--text-soft);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.menu-tab:hover {
+  transform: translateY(-1px);
+}
+
+.menu-tab.is-active {
+  color: var(--text-main);
+  background: linear-gradient(145deg, rgba(255, 190, 89, 0.16), rgba(255, 255, 255, 0.04));
+  border-color: rgba(255, 219, 135, 0.28);
+}
+
+.menu-view {
+  display: none;
+}
+
+.menu-view.is-active {
+  display: block;
+}
+
+.menu-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.menu-view .subsection:first-child {
+  margin-top: 0;
 }
 
 .subsection-title {
@@ -588,6 +619,23 @@ input {
   margin-top: 18px;
 }
 
+.inventory-toolbar,
+.dungeon-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.inventory-toolbar .gacha-meta {
+  margin-top: 0;
+}
+
+.dungeon-toolbar {
+  margin-bottom: 12px;
+}
+
 .progress-head {
   margin-bottom: 10px;
 }
@@ -641,6 +689,14 @@ input {
 .action-card.blessing {
   background:
     linear-gradient(145deg, rgba(93, 169, 246, 0.14), rgba(141, 224, 212, 0.08));
+}
+
+.relic-card.is-unlocked {
+  border-color: rgba(255, 219, 135, 0.34);
+}
+
+.relic-card.is-locked {
+  opacity: 0.56;
 }
 
 .action-title {
@@ -763,21 +819,12 @@ input {
 
 @media (max-width: 1260px) {
   .dashboard {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
+  .commander-panel,
   .battle-panel,
-  .gacha-panel,
-  .log-panel,
-  .systems-panel,
-  .status-panel,
-  .upgrade-panel,
-  .commander-panel {
-    grid-column: auto;
-    grid-row: auto;
-  }
-
-  .log-panel {
+  .management-panel {
     grid-column: 1 / -1;
   }
 }
@@ -802,6 +849,7 @@ input {
   .resource-rack,
   .battle-summary,
   .gacha-meta,
+  .menu-columns,
   .equipment-grid,
   .stat-grid {
     grid-template-columns: 1fr;
@@ -811,8 +859,11 @@ input {
     order: -1;
   }
 
-  .dungeon-actions,
-  .gacha-actions {
+  .inventory-toolbar,
+  .dungeon-toolbar,
+  .gacha-actions,
+  .menu-tabs {
     flex-direction: column;
+    align-items: stretch;
   }
 }

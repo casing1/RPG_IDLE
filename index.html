@@ -107,16 +107,6 @@
               </div>
             </div>
           </div>
-
-          <div class="equipment-block">
-            <div class="section-heading compact">
-              <div>
-                <p class="section-kicker">Equipment</p>
-                <h3>장착 장비</h3>
-              </div>
-            </div>
-            <div class="equipment-grid" id="equipmentSlots"></div>
-          </div>
         </section>
 
         <section class="panel section-card battle-panel">
@@ -226,100 +216,122 @@
           </div>
         </section>
 
-        <section class="panel section-card systems-panel">
+        <section class="panel section-card management-panel">
           <div class="section-heading">
             <div>
-              <p class="section-kicker">Dungeons</p>
-              <h2>도전 던전</h2>
+              <p class="section-kicker">Command Menu</p>
+              <h2>관리 메뉴</h2>
             </div>
-            <button class="ghost-button" id="leaveDungeonButton">던전 이탈</button>
-          </div>
-          <div class="dungeon-list" id="dungeonList"></div>
-        </section>
-
-        <section class="panel section-card upgrade-panel">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Growth</p>
-              <h2>업그레이드</h2>
+            <div class="menu-tabs" id="menuTabs">
+              <button class="menu-tab is-active" data-menu="upgrades">업그레이드</button>
+              <button class="menu-tab" data-menu="equipment">장비창</button>
+              <button class="menu-tab" data-menu="inventory">인벤토리</button>
+              <button class="menu-tab" data-menu="relics">유물창</button>
+              <button class="menu-tab" data-menu="dungeons">던전</button>
+              <button class="menu-tab" data-menu="status">스테이터스</button>
+              <button class="menu-tab" data-menu="log">로그</button>
             </div>
           </div>
 
-          <div class="subsection">
+          <div class="menu-view is-active" data-view="upgrades">
+            <div class="menu-columns">
+              <section class="subsection">
+                <div class="subsection-title">
+                  <span>Gold Upgrades</span>
+                  <strong>즉시 성장</strong>
+                </div>
+                <div class="card-list" id="upgradeList"></div>
+              </section>
+
+              <section class="subsection">
+                <div class="subsection-title">
+                  <span>Essence Blessings</span>
+                  <strong>영구 축복</strong>
+                </div>
+                <div class="card-list blessing-list" id="blessingList"></div>
+              </section>
+            </div>
+          </div>
+
+          <div class="menu-view" data-view="equipment">
             <div class="subsection-title">
-              <span>Gold Upgrades</span>
-              <strong>즉시 성장</strong>
+              <span>Equipment</span>
+              <strong>장착 장비</strong>
             </div>
-            <div class="card-list" id="upgradeList"></div>
+            <div class="equipment-grid" id="equipmentSlots"></div>
           </div>
 
-          <div class="subsection">
+          <div class="menu-view" data-view="inventory">
+            <div class="inventory-toolbar">
+              <div class="gacha-meta">
+                <div class="summary-card">
+                  <span>보유 다이아</span>
+                  <strong id="diamondMetaValue">0</strong>
+                </div>
+                <div class="summary-card">
+                  <span>전설 보정</span>
+                  <strong id="drawPityValue">0 / 30</strong>
+                </div>
+              </div>
+              <div class="gacha-actions">
+                <button class="ghost-button diamond-button" id="drawOneButton">1회 뽑기</button>
+                <button class="ghost-button diamond-button" id="drawTenButton">10회 뽑기</button>
+              </div>
+            </div>
+
+            <div class="menu-columns">
+              <section class="subsection">
+                <div class="subsection-title">
+                  <span>Recent Pulls</span>
+                  <strong>최근 획득</strong>
+                </div>
+                <div class="draw-results" id="recentDraws"></div>
+              </section>
+
+              <section class="subsection">
+                <div class="subsection-title">
+                  <span>Inventory</span>
+                  <strong>보관 장비</strong>
+                </div>
+                <div class="inventory-list" id="inventoryList"></div>
+              </section>
+            </div>
+          </div>
+
+          <div class="menu-view" data-view="relics">
             <div class="subsection-title">
-              <span>Essence Blessings</span>
-              <strong>영구 축복</strong>
+              <span>Relics</span>
+              <strong>유물 보관함</strong>
             </div>
-            <div class="card-list blessing-list" id="blessingList"></div>
-          </div>
-        </section>
-
-        <section class="panel section-card status-panel">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Status</p>
-              <h2>스테이터스 창</h2>
-            </div>
-          </div>
-          <div class="status-list" id="statusList"></div>
-        </section>
-
-        <section class="panel section-card gacha-panel">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Diamond Forge</p>
-              <h2>장비 뽑기</h2>
-            </div>
-            <div class="gacha-actions">
-              <button class="ghost-button diamond-button" id="drawOneButton">1회 뽑기</button>
-              <button class="ghost-button diamond-button" id="drawTenButton">10회 뽑기</button>
-            </div>
+            <div class="card-list" id="relicList"></div>
           </div>
 
-          <div class="gacha-meta">
-            <div class="summary-card">
-              <span>보유 다이아</span>
-              <strong id="diamondMetaValue">0</strong>
-            </div>
-            <div class="summary-card">
-              <span>전설 보정</span>
-              <strong id="drawPityValue">0 / 30</strong>
-            </div>
-          </div>
-
-          <div class="subsection">
+          <div class="menu-view" data-view="dungeons">
             <div class="subsection-title">
-              <span>Recent Pulls</span>
-              <strong>최근 획득</strong>
+              <span>Dungeons</span>
+              <strong>도전 던전</strong>
             </div>
-            <div class="draw-results" id="recentDraws"></div>
+            <div class="dungeon-toolbar">
+              <button class="ghost-button" id="leaveDungeonButton">던전 이탈</button>
+            </div>
+            <div class="dungeon-list" id="dungeonList"></div>
           </div>
 
-          <div class="subsection">
+          <div class="menu-view" data-view="status">
             <div class="subsection-title">
-              <span>Inventory</span>
-              <strong>보관 장비</strong>
+              <span>Status</span>
+              <strong>스테이터스 창</strong>
             </div>
-            <div class="inventory-list" id="inventoryList"></div>
+            <div class="status-list" id="statusList"></div>
           </div>
-        </section>
 
-        <section class="panel section-card log-panel">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Battle Log</p>
-              <h2>전황 보고</h2>
+          <div class="menu-view" data-view="log">
+            <div class="subsection-title">
+              <span>Battle Log</span>
+              <strong>전황 보고</strong>
             </div>
+            <div class="combat-log" id="combatLog"></div>
           </div>
-          <div class="combat-log" id="combatLog"></div>
         </section>
       </main>
     </div>

@@ -236,6 +236,89 @@ const DUNGEONS = [
   },
 ];
 
+const RELICS = [
+  {
+    id: "ember-core",
+    name: "잿불핵",
+    source: "월드 5 도달",
+    description: "초반 자원 수급을 안정화하는 불씨 유물입니다.",
+    condition: () => state.progress.highestWorld >= 5,
+    bonuses: { goldRate: 0.15 },
+  },
+  {
+    id: "moon-lens",
+    name: "월광 렌즈",
+    source: "월드 12 도달",
+    description: "치명타 확률을 크게 끌어올리는 관측 유물입니다.",
+    condition: () => state.progress.highestWorld >= 12,
+    bonuses: { critChance: 0.03 },
+  },
+  {
+    id: "glass-engine",
+    name: "유리 기관",
+    source: "월드 20 도달",
+    description: "공격 속도를 높여 장기 방치 효율을 끌어올립니다.",
+    condition: () => state.progress.highestWorld >= 20,
+    bonuses: { attackSpeed: 0.18 },
+  },
+  {
+    id: "thorn-heart",
+    name: "가시 심장",
+    source: "월드 30 도달",
+    description: "생존력과 재생을 크게 강화하는 심장형 유물입니다.",
+    condition: () => state.progress.highestWorld >= 30,
+    bonuses: { regen: 3.2, maxHp: 160 },
+  },
+  {
+    id: "storm-seal",
+    name: "폭풍 봉인",
+    source: "폭풍 심연 1회 클리어",
+    description: "던전 공략 속도를 크게 높여 주는 중반 핵심 유물입니다.",
+    condition: () => (state.dungeons.clears["storm-abyss"] || 0) >= 1,
+    bonuses: { dungeonDamage: 0.18 },
+  },
+  {
+    id: "iron-standard",
+    name: "철혈 군기",
+    source: "월드 45 도달",
+    description: "최대 체력과 공격력을 균형 있게 올려줍니다.",
+    condition: () => state.progress.highestWorld >= 45,
+    bonuses: { maxHp: 320, attack: 75 },
+  },
+  {
+    id: "frost-crown",
+    name: "서리 왕관",
+    source: "월드 60 도달",
+    description: "치명타 피해를 끌어올려 폭발력을 부여합니다.",
+    condition: () => state.progress.highestWorld >= 60,
+    bonuses: { critDamage: 0.35 },
+  },
+  {
+    id: "void-eye",
+    name: "공허안",
+    source: "공허 관측소 1회 클리어",
+    description: "보스 피해와 다이아 수급량을 함께 보강합니다.",
+    condition: () => (state.dungeons.clears["void-observatory"] || 0) >= 1,
+    bonuses: { bossDamage: 0.22, diamondRate: 0.18 },
+  },
+  {
+    id: "solar-loom",
+    name: "태양 직기",
+    source: "월드 75 도달",
+    description: "공격력과 골드 수급을 동시에 강화하는 후반 유물입니다.",
+    condition: () => state.progress.highestWorld >= 75,
+    bonuses: { attack: 180, goldRate: 0.18 },
+  },
+  {
+    id: "crown-orb",
+    name: "왕관 구슬",
+    source: "월드 95 도달",
+    description: "엔드게임 화력을 위한 최상급 유물입니다.",
+    condition: () => state.progress.highestWorld >= 95,
+    bonuses: { attack: 420, bossDamage: 0.28, dungeonDamage: 0.2 },
+  },
+];
+
 const UPGRADE_DEFS = {
   attack: {
     label: "검술 단련",
@@ -342,10 +425,12 @@ const refs = {
   worldDescription: byId("worldDescription"),
   campaignBar: byId("campaignBar"),
   nextUnlockValue: byId("nextUnlockValue"),
+  menuTabs: byId("menuTabs"),
   leaveDungeonButton: byId("leaveDungeonButton"),
   dungeonList: byId("dungeonList"),
   upgradeList: byId("upgradeList"),
   blessingList: byId("blessingList"),
+  relicList: byId("relicList"),
   statusList: byId("statusList"),
   drawOneButton: byId("drawOneButton"),
   drawTenButton: byId("drawTenButton"),
@@ -417,7 +502,7 @@ function createInitialState() {
     dungeons: { active: null, clears: createDungeonClears() },
     equipment: { nextId: 1, inventory: [], equipped: createEquippedState() },
     gacha: { pity: 0, totalDraws: 0, recentResults: [] },
-    settings: { autoAdvance: true, autoAdvanceWorld: true },
+    settings: { autoAdvance: true, autoAdvanceWorld: true, activeMenu: "upgrades" },
     combat: {
       enemy: null,
       heroCooldown: 0,
@@ -648,22 +733,39 @@ function getEquipmentBonuses() {
   return total;
 }
 
+function getUnlockedRelics() {
+  return RELICS.filter((relic) => relic.condition());
+}
+
+function getRelicBonuses() {
+  const total = createEmptyBonuses();
+
+  getUnlockedRelics().forEach((relic) => {
+    Object.keys(relic.bonuses).forEach((key) => {
+      total[key] += Number(relic.bonuses[key] || 0);
+    });
+  });
+
+  return total;
+}
+
 function getFinalStats() {
   const upgrade = getUpgradeBonuses();
   const gear = getEquipmentBonuses();
+  const relic = getRelicBonuses();
   const furyAttack = state.combat.furyRemaining > 0 ? 1.85 : 1;
   const furySpeed = state.combat.furyRemaining > 0 ? 1.45 : 1;
 
-  const attack = (state.hero.attack + upgrade.attack + gear.attack) * (1 + state.blessings.edge * 0.08) * furyAttack;
-  const maxHp = (state.hero.maxHp + upgrade.maxHp + gear.maxHp) * (1 + state.blessings.ward * 0.08);
-  const attackSpeed = (state.hero.attackSpeed + upgrade.attackSpeed + gear.attackSpeed) * furySpeed;
-  const critChance = clamp(state.hero.critChance + upgrade.critChance + gear.critChance, 0, 0.8);
-  const critDamage = state.hero.critDamage + upgrade.critDamage + gear.critDamage;
-  const regen = (state.hero.regen + upgrade.regen + gear.regen) * (1 + state.blessings.ward * 0.1);
-  const goldRate = 1 + state.blessings.bounty * 0.12 + gear.goldRate;
-  const diamondRate = 1 + state.blessings.bounty * 0.04 + gear.diamondRate;
-  const bossDamage = 1 + Math.floor(state.upgrades.attack / 10) * 0.03 + state.blessings.edge * 0.02 + gear.bossDamage;
-  const dungeonDamage = 1 + Math.floor(state.upgrades.vitality / 12) * 0.04 + gear.dungeonDamage;
+  const attack = (state.hero.attack + upgrade.attack + gear.attack + relic.attack) * (1 + state.blessings.edge * 0.08) * furyAttack;
+  const maxHp = (state.hero.maxHp + upgrade.maxHp + gear.maxHp + relic.maxHp) * (1 + state.blessings.ward * 0.08);
+  const attackSpeed = (state.hero.attackSpeed + upgrade.attackSpeed + gear.attackSpeed + relic.attackSpeed) * furySpeed;
+  const critChance = clamp(state.hero.critChance + upgrade.critChance + gear.critChance + relic.critChance, 0, 0.8);
+  const critDamage = state.hero.critDamage + upgrade.critDamage + gear.critDamage + relic.critDamage;
+  const regen = (state.hero.regen + upgrade.regen + gear.regen + relic.regen) * (1 + state.blessings.ward * 0.1);
+  const goldRate = 1 + state.blessings.bounty * 0.12 + gear.goldRate + relic.goldRate;
+  const diamondRate = 1 + state.blessings.bounty * 0.04 + gear.diamondRate + relic.diamondRate;
+  const bossDamage = 1 + Math.floor(state.upgrades.attack / 10) * 0.03 + state.blessings.edge * 0.02 + gear.bossDamage + relic.bossDamage;
+  const dungeonDamage = 1 + Math.floor(state.upgrades.vitality / 12) * 0.04 + gear.dungeonDamage + relic.dungeonDamage;
   const dps = attack * attackSpeed * (1 + critChance * (critDamage - 1));
 
   return {
@@ -688,6 +790,7 @@ function getFinalStats() {
     },
     upgrade,
     gear,
+    relic,
   };
 }
 
@@ -1149,6 +1252,9 @@ function normalizeState() {
   state.equipment.nextId = Math.max(1, Number(state.equipment.nextId || 1));
   state.equipment.inventory = Array.isArray(state.equipment.inventory) ? state.equipment.inventory : [];
   state.gacha.recentResults = Array.isArray(state.gacha.recentResults) ? state.gacha.recentResults.slice(0, 8) : [];
+  state.settings.activeMenu = ["upgrades", "equipment", "inventory", "relics", "dungeons", "status", "log"].includes(state.settings.activeMenu)
+    ? state.settings.activeMenu
+    : "upgrades";
 
   if (getProgressValue(state.progress.highestWorld, state.progress.highestStage) < getProgressValue(state.progress.world, state.progress.stage)) {
     state.progress.highestWorld = state.progress.world;
@@ -1399,6 +1505,11 @@ function renderStatusList(stats) {
       value: formatNumber(stats.dps),
       detail: state.combat.furyRemaining > 0 ? "광란 버프 적용 중" : "평상시 기준 예상 수치",
     },
+    {
+      label: "활성 유물",
+      value: `${getUnlockedRelics().length} / ${RELICS.length}`,
+      detail: "월드 도달과 던전 클리어로 유물이 활성화됩니다.",
+    },
   ];
 
   refs.statusList.innerHTML = rows.map((row) => `
@@ -1504,6 +1615,46 @@ function renderInventoryList() {
   }).join("");
 }
 
+function renderRelicList() {
+  refs.relicList.innerHTML = RELICS.map((relic) => {
+    const unlocked = relic.condition();
+    const chips = formatBonusChips(relic.bonuses);
+
+    return `
+      <div class="action-card relic-card ${unlocked ? "is-unlocked" : "is-locked"}">
+        <div class="action-title">
+          <div>
+            <strong>${relic.name}</strong>
+            <small>${unlocked ? "활성화" : "잠금"}</small>
+          </div>
+        </div>
+        <p class="action-description">${relic.description}</p>
+        <div class="action-effect">
+          <span>해금 조건: ${relic.source}</span>
+        </div>
+        <div class="equipment-bonuses">
+          ${chips.map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderMenuViews() {
+  refs.menuTabs.querySelectorAll("[data-menu]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.menu === state.settings.activeMenu);
+  });
+
+  document.querySelectorAll("[data-view]").forEach((view) => {
+    view.classList.toggle("is-active", view.dataset.view === state.settings.activeMenu);
+  });
+}
+
+function getActionButton(event, selector) {
+  const target = event.target;
+  return target instanceof Element ? target.closest(selector) : null;
+}
+
 function renderLog() {
   refs.combatLog.innerHTML = state.logs
     .map((entry) => `<div class="log-entry"><strong>[${entry.timestamp}]</strong> ${entry.text}</div>`)
@@ -1590,6 +1741,8 @@ function render() {
   renderDungeonList();
   renderRecentDraws();
   renderInventoryList();
+  renderRelicList();
+  renderMenuViews();
   renderLog();
 }
 
@@ -1634,29 +1787,36 @@ function bindEvents() {
     state.settings.autoAdvanceWorld = event.currentTarget.checked;
   });
 
+  refs.menuTabs.addEventListener("click", (event) => {
+    const button = getActionButton(event, "[data-menu]");
+    if (!button) return;
+    state.settings.activeMenu = button.dataset.menu;
+    render();
+  });
+
   refs.upgradeList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-upgrade]");
+    const button = getActionButton(event, "[data-upgrade]");
     if (!button) return;
     purchaseUpgrade(button.dataset.upgrade);
     render();
   });
 
   refs.blessingList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-blessing]");
+    const button = getActionButton(event, "[data-blessing]");
     if (!button) return;
     purchaseBlessing(button.dataset.blessing);
     render();
   });
 
   refs.dungeonList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-dungeon]");
+    const button = getActionButton(event, "[data-dungeon]");
     if (!button) return;
     startDungeon(button.dataset.dungeon);
     render();
   });
 
   refs.inventoryList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-equip]");
+    const button = getActionButton(event, "[data-equip]");
     if (!button) return;
     equipItemById(Number(button.dataset.equip));
     render();
