@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPG_IDLE | Ashen Keep</title>
+    <meta
+      name="description"
+      content="GitHub Pages에 배포 가능한 방치형 RPG 프로토타입"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="scene-glow scene-glow-left"></div>
+    <div class="scene-glow scene-glow-right"></div>
+
+    <div class="app-shell">
+      <header class="hero-header panel">
+        <div>
+          <p class="eyebrow">Idle RPG Prototype</p>
+          <h1>Ashen Keep</h1>
+          <p class="subtitle">
+            불타버린 성채를 향해 자동으로 전진하는 방치형 원정대
+          </p>
+        </div>
+
+        <div class="resource-rack">
+          <div class="resource-pill">
+            <span>Gold</span>
+            <strong id="goldValue">0</strong>
+          </div>
+          <div class="resource-pill">
+            <span>Essence</span>
+            <strong id="essenceValue">0</strong>
+          </div>
+          <div class="resource-pill">
+            <span>Zone</span>
+            <strong id="zoneValue">-</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="announcement panel" id="offlineBanner" hidden></section>
+
+      <main class="dashboard">
+        <section class="panel section-card commander-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Commander</p>
+              <h2>영웅 상태</h2>
+            </div>
+            <button class="ghost-button" id="saveButton">저장</button>
+          </div>
+
+          <div class="hero-card">
+            <div class="portrait-frame">
+              <div class="portrait-core"></div>
+            </div>
+
+            <div class="hero-meta">
+              <div class="meta-headline">
+                <strong id="heroLevel">Lv.1</strong>
+                <span id="heroStatus">전투 준비 완료</span>
+              </div>
+              <div class="stat-row">
+                <span>경험치</span>
+                <strong id="expValue">0 / 0</strong>
+              </div>
+              <div class="bar-track large">
+                <div class="bar-fill exp-fill" id="expBar"></div>
+              </div>
+              <div class="stat-grid">
+                <div>
+                  <span>공격력</span>
+                  <strong id="attackValue">0</strong>
+                </div>
+                <div>
+                  <span>체력</span>
+                  <strong id="hpValue">0 / 0</strong>
+                </div>
+                <div>
+                  <span>공속</span>
+                  <strong id="speedValue">0</strong>
+                </div>
+                <div>
+                  <span>치명타</span>
+                  <strong id="critValue">0%</strong>
+                </div>
+                <div>
+                  <span>재생</span>
+                  <strong id="regenValue">0</strong>
+                </div>
+                <div>
+                  <span>예상 DPS</span>
+                  <strong id="dpsValue">0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="upgrade-block">
+            <div class="section-heading compact">
+              <div>
+                <p class="section-kicker">Gold Upgrades</p>
+                <h3>즉시 강화</h3>
+              </div>
+            </div>
+
+            <div class="action-stack">
+              <button class="action-button" id="upgradeAttack">
+                <span>검술 단련</span>
+                <small id="upgradeAttackCost">0 Gold</small>
+              </button>
+              <button class="action-button" id="upgradeVitality">
+                <span>생존 훈련</span>
+                <small id="upgradeVitalityCost">0 Gold</small>
+              </button>
+              <button class="action-button" id="upgradeTempo">
+                <span>가속 훈련</span>
+                <small id="upgradeTempoCost">0 Gold</small>
+              </button>
+              <button class="action-button" id="upgradeFocus">
+                <span>집중 조율</span>
+                <small id="upgradeFocusCost">0 Gold</small>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-card battlefield-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Battlefield</p>
+              <h2>자동 전투</h2>
+            </div>
+            <label class="toggle-line">
+              <input type="checkbox" id="autoAdvanceToggle" checked />
+              <span>보스 처치 후 자동 전진</span>
+            </label>
+          </div>
+
+          <div class="duel-stage">
+            <article class="combatant hero-side">
+              <div class="combatant-head">
+                <span>원정대</span>
+                <strong id="heroCardName">잿빛 기사단</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill hero-fill" id="heroHpBar"></div>
+              </div>
+              <div class="combatant-foot">
+                <span id="heroHpText">0 / 0</span>
+                <span id="furyState">광란 대기</span>
+              </div>
+            </article>
+
+            <div class="stage-center">
+              <div class="versus-mark">VS</div>
+              <button class="skill-button" id="furyButton">
+                광란 발동
+                <small id="furyCooldown">준비 완료</small>
+              </button>
+            </div>
+
+            <article class="combatant enemy-side">
+              <div class="combatant-head">
+                <span id="enemyTag">적</span>
+                <strong id="enemyName">적 탐색 중</strong>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill enemy-fill" id="enemyHpBar"></div>
+              </div>
+              <div class="combatant-foot">
+                <span id="enemyHpText">0 / 0</span>
+                <span id="enemyPower">-</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="battle-summary">
+            <div class="summary-card">
+              <span>다음 보스까지</span>
+              <strong id="bossProgress">0 / 0</strong>
+            </div>
+            <div class="summary-card">
+              <span>누적 처치</span>
+              <strong id="totalKills">0</strong>
+            </div>
+            <div class="summary-card">
+              <span>보스 토벌</span>
+              <strong id="totalBossKills">0</strong>
+            </div>
+            <div class="summary-card">
+              <span>전투 전적</span>
+              <strong id="totalDeaths">0 패배</strong>
+            </div>
+          </div>
+
+          <div class="log-block">
+            <div class="section-heading compact">
+              <div>
+                <p class="section-kicker">Battle Log</p>
+                <h3>전황 보고</h3>
+              </div>
+            </div>
+            <div class="combat-log" id="combatLog"></div>
+          </div>
+        </section>
+
+        <section class="panel section-card expedition-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Expedition</p>
+              <h2>원정 경로</h2>
+            </div>
+            <div class="travel-buttons">
+              <button class="ghost-button" id="prevZoneButton">이전 지역</button>
+              <button class="ghost-button" id="nextZoneButton">다음 지역</button>
+            </div>
+          </div>
+
+          <div class="zone-highlight">
+            <p class="zone-name" id="zoneName">-</p>
+            <p class="zone-description" id="zoneDescription">-</p>
+          </div>
+
+          <div class="zone-list" id="zoneList"></div>
+
+          <div class="upgrade-block">
+            <div class="section-heading compact">
+              <div>
+                <p class="section-kicker">Essence Blessings</p>
+                <h3>영구 축복</h3>
+              </div>
+            </div>
+
+            <div class="action-stack">
+              <button class="action-button essence" id="blessingEdge">
+                <span>잿불 검인</span>
+                <small id="blessingEdgeCost">0 Essence</small>
+              </button>
+              <button class="action-button essence" id="blessingBounty">
+                <span>황금 계약</span>
+                <small id="blessingBountyCost">0 Essence</small>
+              </button>
+              <button class="action-button essence" id="blessingWard">
+                <span>수호 맹세</span>
+                <small id="blessingWardCost">0 Essence</small>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" charset="UTF-8" src="./app.js"></script>
+  </body>
+</html>
