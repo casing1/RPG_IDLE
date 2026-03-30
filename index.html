@@ -6,7 +6,7 @@
     <title>RPG_IDLE | Ashen Keep</title>
     <meta
       name="description"
-      content="GitHub Pages에 배포 가능한 방치형 RPG 프로토타입"
+      content="100 x 100 스테이지, 던전 해금, 다이아 장비 뽑기가 포함된 방치형 RPG 프로토타입"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,7 +26,7 @@
           <p class="eyebrow">Idle RPG Prototype</p>
           <h1>Ashen Keep</h1>
           <p class="subtitle">
-            불타버린 성채를 향해 자동으로 전진하는 방치형 원정대
+            100개의 월드와 100개의 세부 스테이지를 돌파하고, 던전과 장비 뽑기로 원정대를 성장시키세요.
           </p>
         </div>
 
@@ -35,13 +35,17 @@
             <span>Gold</span>
             <strong id="goldValue">0</strong>
           </div>
-          <div class="resource-pill">
+          <div class="resource-pill diamond">
+            <span>Diamond</span>
+            <strong id="diamondValue">0</strong>
+          </div>
+          <div class="resource-pill essence">
             <span>Essence</span>
             <strong id="essenceValue">0</strong>
           </div>
-          <div class="resource-pill">
-            <span>Zone</span>
-            <strong id="zoneValue">-</strong>
+          <div class="resource-pill progress">
+            <span>Progress</span>
+            <strong id="progressValue">1-1</strong>
           </div>
         </div>
       </header>
@@ -53,7 +57,7 @@
           <div class="section-heading">
             <div>
               <p class="section-kicker">Commander</p>
-              <h2>영웅 상태</h2>
+              <h2>영웅 현황</h2>
             </div>
             <button class="ghost-button" id="saveButton">저장</button>
           </div>
@@ -104,45 +108,33 @@
             </div>
           </div>
 
-          <div class="upgrade-block">
+          <div class="equipment-block">
             <div class="section-heading compact">
               <div>
-                <p class="section-kicker">Gold Upgrades</p>
-                <h3>즉시 강화</h3>
+                <p class="section-kicker">Equipment</p>
+                <h3>장착 장비</h3>
               </div>
             </div>
-
-            <div class="action-stack">
-              <button class="action-button" id="upgradeAttack">
-                <span>검술 단련</span>
-                <small id="upgradeAttackCost">0 Gold</small>
-              </button>
-              <button class="action-button" id="upgradeVitality">
-                <span>생존 훈련</span>
-                <small id="upgradeVitalityCost">0 Gold</small>
-              </button>
-              <button class="action-button" id="upgradeTempo">
-                <span>가속 훈련</span>
-                <small id="upgradeTempoCost">0 Gold</small>
-              </button>
-              <button class="action-button" id="upgradeFocus">
-                <span>집중 조율</span>
-                <small id="upgradeFocusCost">0 Gold</small>
-              </button>
-            </div>
+            <div class="equipment-grid" id="equipmentSlots"></div>
           </div>
         </section>
 
-        <section class="panel section-card battlefield-panel">
+        <section class="panel section-card battle-panel">
           <div class="section-heading">
             <div>
               <p class="section-kicker">Battlefield</p>
               <h2>자동 전투</h2>
             </div>
-            <label class="toggle-line">
-              <input type="checkbox" id="autoAdvanceToggle" checked />
-              <span>보스 처치 후 자동 전진</span>
-            </label>
+            <div class="toggle-stack">
+              <label class="toggle-line">
+                <input type="checkbox" id="autoAdvanceToggle" checked />
+                <span>세부 스테이지 자동 진행</span>
+              </label>
+              <label class="toggle-line">
+                <input type="checkbox" id="autoAdvanceWorldToggle" checked />
+                <span>월드 클리어 후 자동 전진</span>
+              </label>
+            </div>
           </div>
 
           <div class="duel-stage">
@@ -170,7 +162,7 @@
 
             <article class="combatant enemy-side">
               <div class="combatant-head">
-                <span id="enemyTag">적</span>
+                <span id="enemyTag">Enemy</span>
                 <strong id="enemyName">적 탐색 중</strong>
               </div>
               <div class="bar-track">
@@ -185,76 +177,149 @@
 
           <div class="battle-summary">
             <div class="summary-card">
-              <span>다음 보스까지</span>
-              <strong id="bossProgress">0 / 0</strong>
+              <span>현재 월드</span>
+              <strong id="worldValue">1 / 100</strong>
             </div>
             <div class="summary-card">
-              <span>누적 처치</span>
-              <strong id="totalKills">0</strong>
+              <span>세부 스테이지</span>
+              <strong id="stageValue">1 / 100</strong>
             </div>
             <div class="summary-card">
-              <span>보스 토벌</span>
-              <strong id="totalBossKills">0</strong>
+              <span>스테이지 등급</span>
+              <strong id="stageTypeValue">일반</strong>
             </div>
             <div class="summary-card">
-              <span>전투 전적</span>
-              <strong id="totalDeaths">0 패배</strong>
+              <span>전투 모드</span>
+              <strong id="dungeonStateValue">캠페인</strong>
+            </div>
+            <div class="summary-card">
+              <span>월드 돌파</span>
+              <strong id="worldClearValue">0</strong>
+            </div>
+            <div class="summary-card">
+              <span>보스 처치</span>
+              <strong id="bossKillValue">0</strong>
+            </div>
+            <div class="summary-card">
+              <span>장비 뽑기</span>
+              <strong id="drawCountValue">0</strong>
+            </div>
+            <div class="summary-card">
+              <span>패배</span>
+              <strong id="deathValue">0</strong>
             </div>
           </div>
 
-          <div class="log-block">
-            <div class="section-heading compact">
+          <div class="progress-block">
+            <div class="progress-head">
               <div>
-                <p class="section-kicker">Battle Log</p>
-                <h3>전황 보고</h3>
+                <p class="section-kicker">Campaign Route</p>
+                <h3 id="worldName">월드 1</h3>
               </div>
+              <strong id="stageDescriptor">세부 스테이지 1 / 100</strong>
             </div>
-            <div class="combat-log" id="combatLog"></div>
+            <p class="zone-description" id="worldDescription">-</p>
+            <div class="bar-track large">
+              <div class="bar-fill campaign-fill" id="campaignBar"></div>
+            </div>
+            <p class="next-unlock" id="nextUnlockValue">다음 던전 해금 정보 확인 중</p>
           </div>
         </section>
 
-        <section class="panel section-card expedition-panel">
+        <section class="panel section-card systems-panel">
           <div class="section-heading">
             <div>
-              <p class="section-kicker">Expedition</p>
-              <h2>원정 경로</h2>
+              <p class="section-kicker">Dungeons</p>
+              <h2>도전 던전</h2>
             </div>
-            <div class="travel-buttons">
-              <button class="ghost-button" id="prevZoneButton">이전 지역</button>
-              <button class="ghost-button" id="nextZoneButton">다음 지역</button>
+            <button class="ghost-button" id="leaveDungeonButton">던전 이탈</button>
+          </div>
+          <div class="dungeon-list" id="dungeonList"></div>
+        </section>
+
+        <section class="panel section-card upgrade-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Growth</p>
+              <h2>업그레이드</h2>
             </div>
           </div>
 
-          <div class="zone-highlight">
-            <p class="zone-name" id="zoneName">-</p>
-            <p class="zone-description" id="zoneDescription">-</p>
+          <div class="subsection">
+            <div class="subsection-title">
+              <span>Gold Upgrades</span>
+              <strong>즉시 성장</strong>
+            </div>
+            <div class="card-list" id="upgradeList"></div>
           </div>
 
-          <div class="zone-list" id="zoneList"></div>
-
-          <div class="upgrade-block">
-            <div class="section-heading compact">
-              <div>
-                <p class="section-kicker">Essence Blessings</p>
-                <h3>영구 축복</h3>
-              </div>
+          <div class="subsection">
+            <div class="subsection-title">
+              <span>Essence Blessings</span>
+              <strong>영구 축복</strong>
             </div>
+            <div class="card-list blessing-list" id="blessingList"></div>
+          </div>
+        </section>
 
-            <div class="action-stack">
-              <button class="action-button essence" id="blessingEdge">
-                <span>잿불 검인</span>
-                <small id="blessingEdgeCost">0 Essence</small>
-              </button>
-              <button class="action-button essence" id="blessingBounty">
-                <span>황금 계약</span>
-                <small id="blessingBountyCost">0 Essence</small>
-              </button>
-              <button class="action-button essence" id="blessingWard">
-                <span>수호 맹세</span>
-                <small id="blessingWardCost">0 Essence</small>
-              </button>
+        <section class="panel section-card status-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Status</p>
+              <h2>스테이터스 창</h2>
             </div>
           </div>
+          <div class="status-list" id="statusList"></div>
+        </section>
+
+        <section class="panel section-card gacha-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Diamond Forge</p>
+              <h2>장비 뽑기</h2>
+            </div>
+            <div class="gacha-actions">
+              <button class="ghost-button diamond-button" id="drawOneButton">1회 뽑기</button>
+              <button class="ghost-button diamond-button" id="drawTenButton">10회 뽑기</button>
+            </div>
+          </div>
+
+          <div class="gacha-meta">
+            <div class="summary-card">
+              <span>보유 다이아</span>
+              <strong id="diamondMetaValue">0</strong>
+            </div>
+            <div class="summary-card">
+              <span>전설 보정</span>
+              <strong id="drawPityValue">0 / 30</strong>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">
+              <span>Recent Pulls</span>
+              <strong>최근 획득</strong>
+            </div>
+            <div class="draw-results" id="recentDraws"></div>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-title">
+              <span>Inventory</span>
+              <strong>보관 장비</strong>
+            </div>
+            <div class="inventory-list" id="inventoryList"></div>
+          </div>
+        </section>
+
+        <section class="panel section-card log-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Battle Log</p>
+              <h2>전황 보고</h2>
+            </div>
+          </div>
+          <div class="combat-log" id="combatLog"></div>
         </section>
       </main>
     </div>
