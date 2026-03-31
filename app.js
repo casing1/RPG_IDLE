@@ -527,6 +527,14 @@ let state = createInitialState();
 let lastFrame = 0;
 let lastSave = 0;
 let rateModalOpen = false;
+let listPages = {
+  dungeons: 1,
+  recentDraws: 1,
+  inventory: 1,
+  synthesis: 1,
+  relics: 1,
+  log: 1,
+};
 
 function createEmptyBonuses() {
   return {
@@ -2029,8 +2037,39 @@ function renderStatusList(stats) {
   `).join("");
 }
 
+function renderPaginatedCollection(ref, key, entries, emptyMarkup, options = {}) {
+  const pageSize = options.pageSize || 6;
+  const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
+  const currentPage = clamp(Number(listPages[key] || 1), 1, totalPages);
+  listPages[key] = currentPage;
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const visibleEntries = entries.slice(startIndex, startIndex + pageSize);
+  const itemsMarkup = visibleEntries.length ? visibleEntries.join("") : emptyMarkup;
+  const paginationMarkup = totalPages > 1
+    ? `
+      <div class="pagination-bar">
+        <button type="button" class="page-button" data-page-target="${key}" data-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""}>이전</button>
+        <span class="page-indicator">${currentPage} / ${totalPages}</span>
+        <button type="button" class="page-button" data-page-target="${key}" data-page="${currentPage + 1}" ${currentPage === totalPages ? "disabled" : ""}>다음</button>
+      </div>
+    `
+    : "";
+
+  ref.innerHTML = `
+    <div class="paged-panel">
+      <div class="paged-scroll ${options.scrollClass || ""}">
+        <div class="paged-items ${options.itemsClass || ""}">
+          ${itemsMarkup}
+        </div>
+      </div>
+      ${paginationMarkup}
+    </div>
+  `;
+}
+
 function renderDungeonList() {
-  refs.dungeonList.innerHTML = DUNGEONS.map((dungeon) => {
+  const entries = DUNGEONS.map((dungeon) => {
     const unlocked = state.progress.highestWorld >= dungeon.unlockWorld;
     const active = state.dungeons.active?.id === dungeon.id;
     const clears = state.dungeons.clears[dungeon.id] || 0;
@@ -2056,21 +2095,23 @@ function renderDungeonList() {
         <span>${dungeon.modifier}</span>
       </div>
     `;
-  }).join("");
+  });
+
+  renderPaginatedCollection(refs.dungeonList, "dungeons", entries, "", {
+    pageSize: 4,
+    scrollClass: "is-medium",
+  });
 }
 
 function renderRecentDraws() {
-  if (!state.gacha.recentResults.length) {
-    refs.recentDraws.innerHTML = `
+  const emptyMarkup = `
       <div class="draw-card">
         <strong>최근 장비 없음</strong>
         <span>다이아를 사용해 장비를 뽑거나 합성을 진행하면 이곳에 표시됩니다.</span>
       </div>
     `;
-    return;
-  }
 
-  refs.recentDraws.innerHTML = state.gacha.recentResults.map((item) => `
+  const entries = state.gacha.recentResults.map((item) => `
     <div class="draw-card ${item.className}">
       <div class="draw-top">
         <strong>${item.name}</strong>
@@ -2081,22 +2122,24 @@ function renderRecentDraws() {
         ${formatBonusChips(item.bonuses).map((chip) => `<span class="bonus-chip">${chip}</span>`).join("")}
       </div>
     </div>
-  `).join("");
+  `);
+
+  renderPaginatedCollection(refs.recentDraws, "recentDraws", entries, emptyMarkup, {
+    pageSize: 4,
+    scrollClass: "is-short",
+  });
 }
 
 function renderInventoryList() {
-  const sorted = [...state.equipment.inventory].sort((left, right) => right.score - left.score).slice(0, 18);
-  if (!sorted.length) {
-    refs.inventoryList.innerHTML = `
+  const sorted = [...state.equipment.inventory].sort((left, right) => right.score - left.score);
+  const emptyMarkup = `
       <div class="inventory-card">
         <strong>보관 장비 없음</strong>
         <span>장비를 획득하면 이곳에서 수동 장착할 수 있습니다.</span>
       </div>
     `;
-    return;
-  }
 
-  refs.inventoryList.innerHTML = sorted.map((item) => {
+  const entries = sorted.map((item) => {
     const equipped = state.equipment.equipped[item.slot]?.id === item.id;
     return `
       <div class="inventory-card ${item.className}">
@@ -2122,22 +2165,24 @@ function renderInventoryList() {
         </div>
       </div>
     `;
-  }).join("");
+  });
+
+  renderPaginatedCollection(refs.inventoryList, "inventory", entries, emptyMarkup, {
+    pageSize: 8,
+    scrollClass: "is-tall",
+  });
 }
 
 function renderSynthesisList() {
   const groups = getSynthesisGroups();
-  if (!groups.length) {
-    refs.synthesisList.innerHTML = `
+  const emptyMarkup = `
       <div class="synthesis-card">
         <strong>합성 가능한 장비 없음</strong>
         <span>같은 부위, 같은 등급의 미장착 장비 3개가 모이면 합성을 진행할 수 있습니다.</span>
       </div>
     `;
-    return;
-  }
 
-  refs.synthesisList.innerHTML = groups.map((group) => `
+  const entries = groups.map((group) => `
     <div class="synthesis-card ${group.canSynthesize ? "is-ready" : ""}">
       <div class="synthesis-header">
         <div>
@@ -2160,11 +2205,16 @@ function renderSynthesisList() {
         ${group.target.id === CREATION_RARITY.id ? "창조 합성" : `${group.target.label} 제작`}
       </button>
     </div>
-  `).join("");
+  `);
+
+  renderPaginatedCollection(refs.synthesisList, "synthesis", entries, emptyMarkup, {
+    pageSize: 5,
+    scrollClass: "is-medium",
+  });
 }
 
 function renderRelicList() {
-  refs.relicList.innerHTML = RELICS.map((relic) => {
+  const entries = RELICS.map((relic) => {
     const unlocked = relic.condition();
     const chips = formatBonusChips(relic.bonuses);
 
@@ -2185,7 +2235,22 @@ function renderRelicList() {
         </div>
       </div>
     `;
-  }).join("");
+  });
+
+  renderPaginatedCollection(refs.relicList, "relics", entries, "", {
+    pageSize: 5,
+    scrollClass: "is-medium",
+  });
+}
+
+function renderLog() {
+  const entries = state.logs
+    .map((entry) => `<div class="log-entry"><strong>[${entry.timestamp}]</strong> ${entry.text}</div>`);
+
+  renderPaginatedCollection(refs.combatLog, "log", entries, `<div class="log-entry">전투 로그가 아직 없습니다.</div>`, {
+    pageSize: 12,
+    scrollClass: "is-log",
+  });
 }
 
 function renderMenuViews() {
@@ -2229,11 +2294,10 @@ function bindPressAction(container, selector, handler) {
   });
 }
 
-function renderLog() {
-  refs.combatLog.innerHTML = state.logs
-    .map((entry) => `<div class="log-entry"><strong>[${entry.timestamp}]</strong> ${entry.text}</div>`)
-    .join("");
+function changeListPage(button) {
+  listPages[button.dataset.pageTarget] = Math.max(1, Number(button.dataset.page || 1));
 }
+
 function render() {
   const stats = getFinalStats();
   const worldInfo = getWorldInfo(state.progress.world);
@@ -2418,8 +2482,17 @@ function bindEvents() {
     render();
   });
 
+  bindPressAction(refs.recentDraws, "[data-page-target]", (button) => {
+    changeListPage(button);
+    render();
+  });
+
   bindPressAction(refs.dungeonList, "[data-dungeon]", (button) => {
     startDungeon(button.dataset.dungeon);
+    render();
+  });
+  bindPressAction(refs.dungeonList, "[data-page-target]", (button) => {
+    changeListPage(button);
     render();
   });
 
@@ -2427,10 +2500,26 @@ function bindEvents() {
     equipItemById(Number(button.dataset.equip));
     render();
   });
+  bindPressAction(refs.inventoryList, "[data-page-target]", (button) => {
+    changeListPage(button);
+    render();
+  });
 
   bindPressAction(refs.synthesisList, "[data-synth]", (button) => {
     const [slot, rarity] = button.dataset.synth.split("|");
     synthesizeItems(slot, rarity);
+    render();
+  });
+  bindPressAction(refs.synthesisList, "[data-page-target]", (button) => {
+    changeListPage(button);
+    render();
+  });
+  bindPressAction(refs.relicList, "[data-page-target]", (button) => {
+    changeListPage(button);
+    render();
+  });
+  bindPressAction(refs.combatLog, "[data-page-target]", (button) => {
+    changeListPage(button);
     render();
   });
 

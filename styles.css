@@ -473,7 +473,8 @@ input {
 .menu-tab,
 .equipment-filter-tab,
 .gacha-category-tab,
-.info-icon-button {
+.info-icon-button,
+.page-button {
   border: 0;
   cursor: pointer;
   touch-action: manipulation;
@@ -499,7 +500,8 @@ input {
 .synthesis-button:hover,
 .equipment-filter-tab:hover,
 .gacha-category-tab:hover,
-.info-icon-button:hover {
+.info-icon-button:hover,
+.page-button:hover {
   transform: translateY(-1px);
 }
 
@@ -508,7 +510,8 @@ input {
 .inventory-equip:disabled,
 .action-button:disabled,
 .synthesis-button:disabled,
-.equipment-filter-tab:disabled {
+.equipment-filter-tab:disabled,
+.page-button:disabled {
   opacity: 0.46;
   cursor: not-allowed;
   transform: none;
@@ -937,6 +940,55 @@ input {
   gap: 10px;
 }
 
+.paged-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.paged-items {
+  display: grid;
+  gap: 10px;
+}
+
+.paged-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.paged-scroll.is-short {
+  max-height: 260px;
+}
+
+.paged-scroll.is-medium {
+  max-height: 420px;
+}
+
+.paged-scroll.is-tall,
+.paged-scroll.is-log {
+  max-height: 520px;
+}
+
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.page-button {
+  padding: 9px 14px;
+  border-radius: 999px;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.page-indicator {
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
 .equipment-layout {
   display: grid;
   grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.2fr);
@@ -1236,9 +1288,7 @@ input {
 }
 
 .combat-log {
-  max-height: 420px;
-  overflow: auto;
-  padding-right: 8px;
+  min-height: 0;
 }
 
 .log-entry {
@@ -1341,6 +1391,11 @@ input {
   .gacha-category-tabs,
   .menu-tabs,
   .loadout-avatar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-bar {
     flex-direction: column;
     align-items: stretch;
   }
