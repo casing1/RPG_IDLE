@@ -2,6 +2,12 @@ import { STORAGE_KEY, LEGACY_STORAGE_KEYS, SAVE_INTERVAL_MS, TOTAL_WORLDS, STAGE
 import { refs } from "./dom.js";
 import { choose, clamp, formatMultiplier, formatNumber, formatPercent, randomBetween } from "./utils.js";
 const MANAGEMENT_VIEWS = ["upgrades", "equipment", "inventory", "synthesis", "relics", "dungeons", "status", "log"];
+const HERO_START_ATTACK = 32;
+const HERO_START_ATTACK_SPEED = 0.5;
+const HERO_LEVEL_100_ATTACK_SPEED = 1.45;
+const HERO_ATTACK_SPEED_PER_LEVEL = (HERO_LEVEL_100_ATTACK_SPEED - HERO_START_ATTACK_SPEED) / Math.max(MAX_HERO_LEVEL - 1, 1);
+const UPGRADE_ATTACK_GAIN = 8;
+const UPGRADE_TEMPO_GAIN = 0.025;
 let state = createInitialState();
 let lastFrame = 0;
 let lastSave = 0;
@@ -16,12 +22,6 @@ let listPages = {
     log: 1,
 };
 let dirtyViews = new Set(MANAGEMENT_VIEWS);
-const HERO_START_ATTACK = 32;
-const HERO_START_ATTACK_SPEED = 0.5;
-const HERO_LEVEL_100_ATTACK_SPEED = 1.45;
-const HERO_ATTACK_SPEED_PER_LEVEL = (HERO_LEVEL_100_ATTACK_SPEED - HERO_START_ATTACK_SPEED) / Math.max(MAX_HERO_LEVEL - 1, 1);
-const UPGRADE_ATTACK_GAIN = 8;
-const UPGRADE_TEMPO_GAIN = 0.025;
 function markViewsDirty(...views) {
     const targets = views.length ? views : MANAGEMENT_VIEWS;
     targets.forEach((view) => dirtyViews.add(view));
