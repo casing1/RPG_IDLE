@@ -45,6 +45,9 @@ const HERO_LEVEL_100_ATTACK_SPEED = 1.45;
 const HERO_ATTACK_SPEED_PER_LEVEL = (HERO_LEVEL_100_ATTACK_SPEED - HERO_START_ATTACK_SPEED) / Math.max(MAX_HERO_LEVEL - 1, 1);
 const UPGRADE_ATTACK_GAIN = 8;
 const UPGRADE_TEMPO_GAIN = 0.025;
+const LIFE_STEAL_CAP = 0.1;
+const BOSS_LIFE_STEAL_EFFECTIVENESS = 0.7;
+const WEAPON_LIFE_STEAL_BY_RANK = [0.004, 0.006, 0.009, 0.014, 0.022, 0.032, 0.045, 0.06];
 
 let state = createInitialState();
 let lastFrame = 0;
@@ -87,6 +90,7 @@ function createEmptyBonuses() {
     critChance: 0,
     critDamage: 0,
     regen: 0,
+    lifeSteal: 0,
     goldRate: 0,
     diamondRate: 0,
     bossDamage: 0,
@@ -123,6 +127,7 @@ function createHeroState() {
     critChance: 0.08,
     critDamage: 1.7,
     regen: 2.6,
+    lifeSteal: 0,
   };
 }
 
@@ -216,6 +221,7 @@ function cloneBonuses(bonuses) {
     critChance: Number(bonuses?.critChance || 0),
     critDamage: Number(bonuses?.critDamage || 0),
     regen: Number(bonuses?.regen || 0),
+    lifeSteal: Number(bonuses?.lifeSteal || 0),
     goldRate: Number(bonuses?.goldRate || 0),
     diamondRate: Number(bonuses?.diamondRate || 0),
     bossDamage: Number(bonuses?.bossDamage || 0),
@@ -233,6 +239,7 @@ function calculateItemScore(item) {
     bonus.critChance * 950 +
     bonus.critDamage * 240 +
     bonus.regen * 80 +
+    bonus.lifeSteal * 1800 +
     bonus.goldRate * 220 +
     bonus.diamondRate * 360 +
     bonus.bossDamage * 520 +
@@ -448,6 +455,7 @@ function getUpgradeBonuses() {
     critChance: state.upgrades.focus * 0.008,
     critDamage: state.upgrades.focus * 0.05,
     regen: state.upgrades.recovery * 0.38,
+    lifeSteal: 0,
     goldRate: 0,
     diamondRate: 0,
     bossDamage: Math.floor(state.upgrades.attack / 10) * 0.03,
@@ -495,6 +503,7 @@ function getFinalStats() {
   const critChance = clamp(state.hero.critChance + upgrade.critChance + gear.critChance + relic.critChance, 0, 0.85);
   const critDamage = state.hero.critDamage + upgrade.critDamage + gear.critDamage + relic.critDamage;
   const regen = (state.hero.regen + upgrade.regen + gear.regen + relic.regen) * (1 + state.blessings.ward * 0.1);
+  const lifeSteal = clamp(state.hero.lifeSteal + upgrade.lifeSteal + gear.lifeSteal + relic.lifeSteal, 0, LIFE_STEAL_CAP);
   const goldRate = 1 + state.blessings.bounty * 0.12 + gear.goldRate + relic.goldRate;
   const diamondRate = 1 + state.blessings.bounty * 0.04 + gear.diamondRate + relic.diamondRate;
   const bossDamage = 1 + Math.floor(state.upgrades.attack / 10) * 0.03 + state.blessings.edge * 0.02 + gear.bossDamage + relic.bossDamage;
@@ -510,6 +519,7 @@ function getFinalStats() {
     critChance,
     critDamage,
     regen,
+    lifeSteal,
     goldRate,
     diamondRate,
     bossDamage,
@@ -524,6 +534,7 @@ function getFinalStats() {
       critChance: state.hero.critChance,
       critDamage: state.hero.critDamage,
       regen: state.hero.regen,
+      lifeSteal: state.hero.lifeSteal,
     },
     upgrade,
     gear,
@@ -696,8 +707,13 @@ function rollRarity(minRarity) {
   return picked;
 }
 
-function getAffixPool(scale, multiplier) {
-  return [
+function getWeaponLifeStealValue(rarity) {
+  return WEAPON_LIFE_STEAL_BY_RANK[getRarityRank(rarity.id, rarity.id === CREATION_RARITY.id)] || WEAPON_LIFE_STEAL_BY_RANK[0];
+}
+
+function getAffixPool(slot, scale, rarity) {
+  const multiplier = rarity.multiplier;
+  const pool = [
     (bonuses) => {
       bonuses.attack += Math.round(scale * 2.2 * multiplier);
     },
@@ -732,6 +748,14 @@ function getAffixPool(scale, multiplier) {
       bonuses.dungeonDamage += 0.02 * multiplier;
     },
   ];
+
+  if (slot === "weapon") {
+    pool.push((bonuses) => {
+      bonuses.lifeSteal += getWeaponLifeStealValue(rarity);
+    });
+  }
+
+  return pool;
 }
 
 function applySlotBaseBonuses(slot, bonuses, scale, multiplier) {
@@ -787,8 +811,8 @@ function applySlotBaseBonuses(slot, bonuses, scale, multiplier) {
   }
 }
 
-function applyRandomAffixes(bonuses, rarity, scale, isCreation) {
-  const pool = getAffixPool(scale, rarity.multiplier);
+function applyRandomAffixes(bonuses, slot, rarity, scale, isCreation) {
+  const pool = getAffixPool(slot, scale, rarity);
   const extraCount = isCreation
     ? 5
     : rarity.id === "unique"
@@ -816,7 +840,7 @@ function createEquipmentItem(options: any = {}) {
   const bonuses = createEmptyBonuses();
 
   applySlotBaseBonuses(slot, bonuses, scale, rarity.multiplier);
-  applyRandomAffixes(bonuses, rarity, scale, isCreation);
+  applyRandomAffixes(bonuses, slot, rarity, scale, isCreation);
 
   const name = isCreation
     ? `${choose(CREATION_PREFIXES)} ${choose(CREATION_NAMES[slot])}`
@@ -1225,7 +1249,12 @@ function tick(dt) {
   while (state.combat.heroCooldown <= 0 && state.combat.enemy && state.combat.enemy.hp > 0) {
     const isCrit = Math.random() < stats.critChance;
     const damage = getDamageAgainstEnemy(stats, state.combat.enemy, isCrit);
+    const dealtDamage = Math.min(state.combat.enemy.hp, damage);
     state.combat.enemy.hp = Math.max(0, state.combat.enemy.hp - damage);
+    const lifeStealRate = state.combat.enemy.boss ? stats.lifeSteal * BOSS_LIFE_STEAL_EFFECTIVENESS : stats.lifeSteal;
+    if (lifeStealRate > 0 && dealtDamage > 0) {
+      state.hero.hp = Math.min(stats.maxHp, state.hero.hp + dealtDamage * lifeStealRate);
+    }
     state.combat.heroCooldown += 1 / Math.max(stats.attackSpeed, 0.1);
 
     if (state.combat.enemy.hp <= 0) {
@@ -1249,6 +1278,7 @@ function tick(dt) {
 function formatBonusChips(bonuses) {
   const chips = [];
   if (bonuses.attack) chips.push(`ATK +${formatNumber(bonuses.attack)}`);
+  if (bonuses.lifeSteal) chips.push(`흡혈 +${formatPercent(bonuses.lifeSteal)}`);
   if (bonuses.defense) chips.push(`DEF +${formatNumber(bonuses.defense)}`);
   if (bonuses.maxHp) chips.push(`HP +${formatNumber(bonuses.maxHp)}`);
   if (bonuses.attackSpeed) chips.push(`SPD +${bonuses.attackSpeed.toFixed(2)}`);
@@ -1576,6 +1606,11 @@ function renderStatusList(stats) {
       label: "체력 회복",
       value: `${stats.regen.toFixed(1)}/s`,
       detail: `기본 ${stats.base.regen.toFixed(1)} / 업그레이드 +${stats.upgrade.regen.toFixed(1)} / 장비 +${stats.gear.regen.toFixed(1)}`,
+    },
+    {
+      label: "생명력 흡수",
+      value: formatPercent(stats.lifeSteal),
+      detail: `무기 장비 옵션 기반 / 보스전 효율 ${formatPercent(BOSS_LIFE_STEAL_EFFECTIVENESS)} / 상한 ${formatPercent(LIFE_STEAL_CAP)}`,
     },
     {
       label: "피해 경감",
